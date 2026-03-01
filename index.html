@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1024">
+    <title>Salary Sheet</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="wallet.png">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="apple-touch-icon" href="wallet.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff; 
+            min-width: 1024px;
+        }
+        
+        /* Document Container Styling */
+        .document-container {
+            width: 21cm; 
+            min-height: 29.7cm; 
+            margin: 2rem auto;
+            background: #ffffff;
+            padding: 1.5cm 1.5cm;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        th, td {
+            border: 1px solid #1f2937; 
+            padding: 9px 10px;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+        }
+
+        .name-col { white-space: nowrap; font-weight: 500; }
+        
+        /* Inputs inside table */
+        input[type="number"], .editable-text {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-family: inherit;
+            font-size: inherit;
+            color: #111827;
+            text-align: right;
+        }
+        
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        input[type="number"] { -moz-appearance: textfield; }
+
+        /* Highlight editable areas in web view */
+        @media screen {
+            .input-cell {
+                background-color: #f8fafc;
+                transition: background-color 0.2s, box-shadow 0.2s;
+                cursor: text;
+            }
+            .input-cell:hover, .input-cell:focus-within {
+                background-color: #e0f2fe;
+                box-shadow: inset 0 0 0 1px #3b82f6;
+            }
+            .inline-input {
+                border-bottom: 1px dashed #64748b;
+                min-width: 120px;
+                display: inline-block;
+                padding: 0 4px;
+                outline: none;
+                transition: background 0.2s;
+            }
+            .inline-input:focus { background-color: #e0f2fe; }
+            
+            /* Custom styling for the dropdown */
+            .type-select {
+                background-color: #e2e8f0;
+                border: 1px solid #94a3b8;
+                border-radius: 4px;
+                padding: 2px 5px;
+                font-weight: bold;
+                color: #0f172a;
+                outline: none;
+                cursor: pointer;
+            }
+        }
+
+        /* Print Specific Styles */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 2cm 1.5cm;
+                page-break-after:avoid; 
+            }
+            body {
+                background-color: transparent !important;
+                margin: 0; padding: 0;
+                min-width: auto; 
+            }
+            .document-container {
+                box-shadow: none !important; margin: 0 !important; padding: 0 !important;
+                border: none !important; border-radius: 0 !important;
+                width: 100% !important; max-width: 100% !important;
+            }
+            .no-print { display: none !important; } 
+            
+            th { background-color: transparent !important; color-adjust: exact; -webkit-print-color-adjust: exact; }
+            th, td { border: 1px solid #000 !important; }
+            .input-cell { background-color: transparent !important; box-shadow: none !important; }
+            .inline-input { border-bottom: none !important; padding: 0 !important; }
+            
+            /* Replace dropdown with plain text on print */
+            .type-select {
+                appearance: none; -webkit-appearance: none;
+                border: none; background: transparent; color: #000;
+                font-weight: 600; font-size: 14px; padding: 0; text-align: center;
+                display: block; width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Action Bar (Web Only) -->
+    <div class="max-w-4xl mx-auto mt-6 mb-2 flex justify-between items-center px-4 no-print">
+        <div class="flex items-center gap-3">
+            <button onclick="window.print()" class="bg-indigo-600 text-white px-6 py-2.5 rounded shadow hover:bg-indigo-700 font-semibold flex items-center gap-2 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Print Sheet
+            </button>
+            <span id="save-status" class="text-sm text-green-600 font-medium opacity-0 transition-opacity duration-300">✓ Auto-saved</span>
+        </div>
+        <button onclick="resetData()" class="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded hover:bg-red-100 font-medium text-sm transition">
+            Reset Data (New Month)
+        </button>
+    </div>
+
+    <!-- Main Document -->
+    <div class="document-container">
+        
+        <!-- Pre-printed Pad Header Mockup (Hidden on Print) -->
+        <div class="text-center mb-8 no-print border-b-2 border-gray-200 pb-6">
+            <h1 class="text-3xl font-bold text-gray-900 tracking-wide">Abdur Razzak Dakhil Madrasa</h1>
+            <p class="text-gray-600 mt-1 font-medium">Sarafvhata, Rangunia, Chattogram</p>
+            <div class="mt-2 inline-block bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded border border-blue-200">
+                This header is for your reference and will NOT appear in the print.
+            </div>
+        </div>
+
+        <!-- Document Title -->
+        <div class="text-center mt-20 mb-6">
+            <h2 class="text-xl font-bold inline-block border-b-2 border-black pb-1 uppercase tracking-wider">Salary Statement</h2>
+        </div>
+
+        <!-- Info Section (Month & Year) -->
+        <div class="flex justify-between mb-4 font-semibold text-gray-800">
+            <div>
+                Month: <span class="inline-input" id="month-input" contenteditable="true" data-key="month"></span>
+            </div>
+            <div>
+                Year: <span class="inline-input" id="year-input" contenteditable="true" data-key="year"></span>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 3%;">Sl.</th>
+                    <th style="width: 22%; text-align: left;">Name of Employee</th>
+                    <th style="width: 23%; text-align: left;">Designation</th>
+                    <th style="width: 13%; text-align: center;">Salary</th>
+                    <th style="width: 13%;">
+                        <select id="extra-type" class="type-select w-full text-center">
+                            <option value="bonus">Bonus</option>
+                            <option value="deduction">Deduction</option>
+                        </select>
+                    </th>
+                    <th style="width: 13%; text-align: center;">Total</th>
+                    <th style="width: 13%;">Signature</th>
+                </tr>
+            </thead>
+            <tbody id="salary-body">
+                <!-- Rows will be injected by JavaScript -->
+            </tbody>
+        </table>
+
+        <!-- === টেবিলের বাইরে Grand Total === -->
+        <div class="flex justify-end mt-4 pr-4">
+            <div class="text-lg font-bold text-black pb-1">
+                Grand Total: <span id="grand-total-text" class="ml-3 inline-block min-w-[100px] text-right"></span>
+            </div>
+        </div>
+
+        <!-- Signatures -->
+        <div style="margin-top:60px;" class="flex justify-between text-center text-sm font-bold">
+            <div>
+                <div class="border-t border-black w-32 mx-auto mb-1"></div>
+                <p>Prepared By</p>
+                <p class="font-normal text-xs">(Signature & Date)</p>
+            </div>
+            <div>
+                <div class="border-t border-black w-32 mx-auto mb-1"></div>
+                <p>Date of Payment</p>
+            </div>
+            <div>
+                <div class="border-t border-black w-40 mx-auto mb-1"></div>
+                <p>Superintendent</p>
+                <p class="font-normal text-xs">(Signature & Seal)</p>
+                
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Logic Script -->
+    <script>
+        // Employee Data
+        const employees = [
+            { id: 1, name: "Md Jabedul Islam", desig: "Superintendent" },
+            { id: 2, name: "Md Rakibul Anwar", desig: "Assistant Head" },
+            { id: 3, name: "Nandita Shil", desig: "Senior Teacher" },
+            { id: 4, name: "Md Joynal Abedin", desig: "Senior Mudarris" },
+            { id: 5, name: "Mahfuzul Hoque Ador", desig: "Senior Teacher" },
+            { id: 6, name: "Muhammad Sohel", desig: "Assistant Teacher" },
+            { id: 7, name: "Any Akter Nishu", desig: "Assistant Teacher" },
+            { id: 8, name: "Nur Kamal Tamjid", desig: "Assistant Mudarris" },
+            { id: 9, name: "Sadia Jahan", desig: "Assistant Teacher" },
+            { id: 10, name: "Sabrina Sultana Priya", desig: "Assistant Teacher" },
+            { id: 11, name: "Tausiful Hoque Main", desig: "Assistant Teacher" },
+            { id: 12, name: "Raisul Islam Saied", desig: "Assistant Teacher" },
+            { id: 13, name: "Fahmida Sikder Jhuma", desig: "Assistant Teacher" },
+            { id: 14, name: "Urmi Karim Samu", desig: "Assistant Teacher" },
+            { id: 15, name: "Niamat Ali", desig: "Office Assistant" }
+        ];
+
+        const tbody = document.getElementById('salary-body');
+        const monthInput = document.getElementById('month-input');
+        const yearInput = document.getElementById('year-input');
+        const extraTypeSelect = document.getElementById('extra-type');
+        let saveTimeout;
+
+        // Initialize Table
+        function renderTable() {
+            tbody.innerHTML = '';
+            employees.forEach(emp => {
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-id', emp.id);
+                tr.innerHTML = `
+                    <td class="text-center">${emp.id}</td>
+                    <td class="name-col">${emp.name}</td>
+                    <td>${emp.desig}</td>
+                    <td class="input-cell"><input type="number" class="salary-input" data-field="salary"></td>
+                    <td class="input-cell"><input type="number" class="extra-input" data-field="extra"></td>
+                    <td class="text-right font-semibold total-col"></td>
+                    <td></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            attachListeners();
+        }
+
+        // Attach Event Listeners
+        function attachListeners() {
+            // Inputs in table
+            document.querySelectorAll('input[type="number"]').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const tr = input.closest('tr');
+
+                    // === Auto 50% Bonus Logic ===
+                    // যদি 'Bonus' সিলেক্ট থাকে এবং শুধু 'Salary' এর ঘরে টাইপ করা হয়
+                    if (input.classList.contains('salary-input') && extraTypeSelect.value === 'bonus') {
+                        const salaryAmount = parseFloat(input.value) || 0;
+                        const extraInput = tr.querySelector('.extra-input');
+                        
+                        if (salaryAmount > 0) {
+                            extraInput.value = salaryAmount / 2; // বেতনের অর্ধেক
+                        } else {
+                            extraInput.value = ''; // বেতন মুছে দিলে বোনাসও মুছে যাবে
+                        }
+                    }
+
+                    calculateRow(tr);
+                    calculateGrandTotal(); // Call Grand Total
+                    triggerSave();
+                });
+            });
+
+            // Month and Year
+            monthInput.addEventListener('input', triggerSave);
+            yearInput.addEventListener('input', triggerSave);
+
+            // Dropdown (Bonus/Deduction)
+            extraTypeSelect.addEventListener('change', () => {
+                document.querySelectorAll('tr[data-id]').forEach(calculateRow);
+                calculateGrandTotal(); // Call Grand Total
+                triggerSave();
+            });
+        }
+
+        // Calculate Row Total
+        function calculateRow(tr) {
+            const salary = parseFloat(tr.querySelector('.salary-input').value) || 0;
+            const extra = parseFloat(tr.querySelector('.extra-input').value) || 0;
+            const isBonus = extraTypeSelect.value === 'bonus';
+            
+            let total = 0;
+            if (salary > 0 || extra > 0) {
+                total = isBonus ? (salary + extra) : (salary - extra);
+            }
+            
+            const totalCol = tr.querySelector('.total-col');
+            // If total is 0 and no input is given, leave it blank. Otherwise show total.
+            if(total === 0 && !tr.querySelector('.salary-input').value && !tr.querySelector('.extra-input').value) {
+                totalCol.innerText = '';
+            } else {
+                totalCol.innerText = total.toLocaleString('en-IN');
+            }
+        }
+
+        // --- Calculate Grand Total ---
+        function calculateGrandTotal() {
+            let grandTotal = 0;
+            document.querySelectorAll('.total-col').forEach(col => {
+                const val = parseFloat(col.innerText.replace(/,/g, '')) || 0;
+                grandTotal += val;
+            });
+            
+            const grandTotalEl = document.getElementById('grand-total-text');
+            if (grandTotal > 0) {
+                grandTotalEl.innerText = grandTotal.toLocaleString('en-IN');
+            } else {
+                grandTotalEl.innerText = '';
+            }
+        }
+
+        // --- LOCAL STORAGE LOGIC ---
+        const STORAGE_KEY = 'madrasa_salary_data';
+
+        function triggerSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveData, 500); // Save after 500ms of typing
+        }
+
+        function saveData() {
+            const data = {
+                month: monthInput.innerText,
+                year: yearInput.innerText,
+                type: extraTypeSelect.value,
+                records: {}
+            };
+
+            document.querySelectorAll('tr[data-id]').forEach(tr => {
+                const id = tr.getAttribute('data-id');
+                const s = tr.querySelector('.salary-input').value;
+                const e = tr.querySelector('.extra-input').value;
+                data.records[id] = { salary: s, extra: e };
+            });
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            showSaveStatus();
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                
+                // Load Headers
+                if(data.month) monthInput.innerText = data.month;
+                if(data.year) yearInput.innerText = data.year;
+                if(data.type) extraTypeSelect.value = data.type;
+
+                // Load Rows
+                document.querySelectorAll('tr[data-id]').forEach(tr => {
+                    const id = tr.getAttribute('data-id');
+                    if (data.records && data.records[id]) {
+                        tr.querySelector('.salary-input').value = data.records[id].salary || '';
+                        tr.querySelector('.extra-input').value = data.records[id].extra || '';
+                        calculateRow(tr);
+                    }
+                });
+                calculateGrandTotal(); // Init Grand Total on load
+            }
+        }
+
+        function resetData() {
+            if (confirm("Are you sure you want to clear all inputs for a new month?")) {
+                localStorage.removeItem(STORAGE_KEY);
+                monthInput.innerText = '';
+                // Keep the year intact usually, or clear it if you want
+                extraTypeSelect.value = 'bonus';
+                
+                document.querySelectorAll('input[type="number"]').forEach(input => input.value = '');
+                document.querySelectorAll('.total-col').forEach(col => col.innerText = '');
+                document.getElementById('grand-total-text').innerText = ''; // Clear Grand Total
+            }
+        }
+        function showSaveStatus() {
+            const status = document.getElementById('save-status');
+            status.style.opacity = '1';
+            setTimeout(() => { status.style.opacity = '0'; }, 2000);
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTable();
+            loadData();
+        });
+    </script>
+</body>
+  </html>
