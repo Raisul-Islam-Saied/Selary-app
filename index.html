@@ -103,11 +103,21 @@
 
         /* Print Specific Styles */
         @media print {
+            
             @page {
-                size: A4 portrait;
-                margin: 2cm 1.5cm;
-                page-break-after:avoid; 
-            }
+        size: A4 portrait;
+        margin: 1.5cm;
+    }
+
+    html, body {
+        height: 100%;
+        overflow: hidden !important;
+    }
+
+    .document-container {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+    }
             body {
                 background-color: transparent !important;
                 margin: 0; padding: 0;
