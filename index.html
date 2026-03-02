@@ -37,7 +37,7 @@
         
         th, td {
             border: 1px solid #1f2937; 
-            padding: 10px 10px;
+            padding: 9px 10px;
             color: #111827;
             font-size: 14px;
         }
@@ -167,9 +167,16 @@
             </button>
             <span id="save-status" class="text-sm text-green-600 font-medium opacity-0 transition-opacity duration-300">✓ Auto-saved</span>
         </div>
-        <button onclick="resetData()" class="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded hover:bg-red-100 font-medium text-sm transition">
-            Reset Data
-        </button>
+        <!-- === নতুন: Unlock Edit চেকবক্স যুক্ত করা হয়েছে === -->
+        <div class="flex items-center gap-5">
+            <label class="flex items-center gap-2 cursor-pointer select-none text-gray-700 font-medium">
+                <input type="checkbox" id="edit-toggle" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                <span>Unlock Edit</span>
+            </label>
+            <button onclick="resetData()" class="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded hover:bg-red-100 font-medium text-sm transition">
+                Reset Data
+            </button>
+        </div>
     </div>
 
     <!-- Main Document -->
@@ -179,19 +186,15 @@
         <div class="text-center mb-8 no-print border-b-2 border-gray-200 pb-6">
             <h1 class="text-3xl font-bold text-gray-900 tracking-wide">Abdur Razzak Dakhil Madrasa</h1>
             <p class="text-gray-600 mt-1 font-medium">Sarafbhata, Rangunia, Chattogram.</p>
-            <div class="mt-2 inline-block bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded border border-blue-200">
-                This header is for your reference and will NOT appear in the print.
-            </div>
+          
         </div>
 
         <!-- Document Title -->
-        <div style="margin-top: 80px" class="text-center mb-6">
-            <!-- === পরিবর্তন: ID যুক্ত করা হয়েছে যাতে জাভাস্ক্রিপ্ট দিয়ে টাইটেল বদলানো যায় === -->
+        <div style="margin-top: 75px" class="text-center mb-6">
             <h2 id="statement-title" class="text-xl font-bold inline-block border-b-2 border-black pb-1 uppercase tracking-wider">Salary Statement</h2>
         </div>
 
         <!-- Info Section (Month & Year) -->
-        <!-- === পরিবর্তন: প্রিন্টের সময় এই অংশটি হাইড করতে no-print ক্লাস যোগ করা হয়েছে === -->
         <div class="flex justify-between mb-4 font-semibold text-gray-800 no-print">
             <div>
                 Month: 
@@ -215,7 +218,7 @@
             </div>
         </div>
 
-        <!-- Table: ডিফল্টভাবে show-absent ক্লাস যুক্ত করা হলো -->
+        <!-- Table -->
         <table id="main-table" class="show-absent">
             <thead>
                 <tr>
@@ -226,7 +229,6 @@
                     <!-- Absent (Days) কলাম -->
                     <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
                     <th style="width: 13%;">
-                        <!-- ডিফল্ট অপশন Deduction সিলেক্ট করা হলো -->
                         <select id="extra-type" class="type-select w-full text-center">
                             <option value="deduction" selected>Deduction</option>
                             <option value="bonus">Bonus</option>
@@ -249,7 +251,7 @@
         </div>
 
         <!-- Signatures -->
-        <div style="margin-top:70px;" class="flex justify-between text-center text-sm font-bold">
+        <div style="margin-top:65px;" class="flex justify-between text-center text-sm font-bold">
             <div>
                 <div class="border-t border-black w-32 mx-auto mb-1"></div>
                 <p>Prepared By</p>
@@ -271,23 +273,27 @@
 
     <!-- Logic Script -->
     <script>
+        // === কন্ট্রোল প্যানেল স্টোরেজ থেকে পড়া হচ্ছে ===
+        // ডিফল্ট false থাকবে, সেভ করা থাকলে সেটা নেবে।
+        let allowManualEdit = localStorage.getItem('madrasa_edit_mode') === 'true';
+
         // Employee Data
         const employees = [
-            { id: 1, name: "Md Jabedul Islam", desig: "Superintendent" },
-            { id: 2, name: "Md Rakibul Anwar", desig: "Assistant Head" },
-            { id: 3, name: "Nandita Shil", desig: "Senior Teacher" },
-            { id: 4, name: "Md Joynal Abedin", desig: "Senior Mudarris" },
-            { id: 5, name: "Mahfuzul Hoque Ador", desig: "Senior Teacher" },
-            { id: 6, name: "Muhammad Sohel", desig: "Assistant Teacher" },
-            { id: 7, name: "Any Akter Nishu", desig: "Assistant Teacher" },
-            { id: 8, name: "Nur Kamal Tamjid", desig: "Assistant Mudarris" },
-            { id: 9, name: "Sadia Jahan", desig: "Assistant Teacher" },
-            { id: 10, name: "Sabrina Sultana Priya", desig: "Assistant Teacher" },
-            { id: 11, name: "Tausiful Hoque Mayen", desig: "Assistant Teacher" },
-            { id: 12, name: "Raisul Islam Saied", desig: "Assistant Teacher" },
-            { id: 13, name: "Fahmida Sikder Jhuma", desig: "Assistant Teacher" },
-            { id: 14, name: "Urmi Karim Samu", desig: "Assistant Teacher" },
-            { id: 15, name: "Niamat Ali", desig: "Office Assistant" }
+            { id: 1, name: "Md Jabedul Islam", desig: "Superintendent", defaultSalary: 5000 },
+            { id: 2, name: "Md Rakibul Anwar", desig: "Assistant Head", defaultSalary: 4500 },
+            { id: 3, name: "Nandita Shil", desig: "Senior Teacher", defaultSalary: 4500 },
+            { id: 4, name: "Md Joynal Abedin", desig: "Senior Mudarris", defaultSalary: 4500 },
+            { id: 5, name: "Mahfuzul Hoque Ador", desig: "Senior Teacher", defaultSalary: 4000 },
+            { id: 6, name: "Muhammad Sohel", desig: "Assistant Teacher", defaultSalary: 3300 },
+            { id: 7, name: "Any Akter Nishu", desig: "Assistant Teacher", defaultSalary: 3500 },
+            { id: 8, name: "Nur Kamal Tamjid", desig: "Assistant Mudarris", defaultSalary: 3500 },
+            { id: 9, name: "Sadia Jahan", desig: "Assistant Teacher", defaultSalary: 3300 },
+            { id: 10, name: "Sabrina Sultana Priya", desig: "Assistant Teacher", defaultSalary: 3300 },
+            { id: 11, name: "Tausiful Hoque Mayen", desig: "Assistant Teacher", defaultSalary: 3300 },
+            { id: 12, name: "Raisul Islam Saied", desig: "Assistant Teacher", defaultSalary: 3300 },
+            { id: 13, name: "Fahmida Sikder Jhuma", desig: "Assistant Teacher", defaultSalary: 3300 },
+            { id: 14, name: "Urmi Karim Samu", desig: "Assistant Teacher", defaultSalary: 3300 },
+            { id: 15, name: "Niamat Ali", desig: "Office Assistant", defaultSalary: 2600 }
         ];
 
         const tbody = document.getElementById('salary-body');
@@ -295,9 +301,9 @@
         const yearInput = document.getElementById('year-input');
         const extraTypeSelect = document.getElementById('extra-type');
         const mainTable = document.getElementById('main-table');
+        const editToggle = document.getElementById('edit-toggle');
         let saveTimeout;
 
-        // === নতুন: টাইটেল আপডেট করার ফাংশন ===
         function updateTitle() {
             const titleEl = document.getElementById('statement-title');
             if (titleEl) {
@@ -308,6 +314,9 @@
         // Initialize Table
         function renderTable() {
             tbody.innerHTML = '';
+            
+            const readonlyAttr = allowManualEdit ? '' : 'readonly';
+
             employees.forEach(emp => {
                 const tr = document.createElement('tr');
                 tr.setAttribute('data-id', emp.id);
@@ -315,9 +324,9 @@
                     <td class="text-center">${emp.id}</td>
                     <td class="name-col">${emp.name}</td>
                     <td>${emp.desig}</td>
-                    <td class="input-cell"><input type="number" class="salary-input" data-field="salary"></td>
+                    <td class="input-cell"><input type="number" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
                     <td class="input-cell absent-col"><input type="number" class="absent-input" placeholder="0"></td>
-                    <td class="input-cell"><input type="number" class="extra-input" data-field="extra"></td>
+                    <td class="input-cell"><input type="number" class="extra-input" data-field="extra" ${readonlyAttr}></td>
                     <td class="text-right font-semibold total-col"></td>
                     <td></td>
                 `;
@@ -326,14 +335,12 @@
             attachListeners();
         }
 
-        // মাসের দিনের সংখ্যা বের করার ফাংশন
         function getDaysInMonth(monthName, yearStr) {
             const year = parseInt(yearStr) || new Date().getFullYear();
             const monthIndex = new Date(Date.parse(monthName + " 1, 2020")).getMonth() + 1;
             return new Date(year, monthIndex, 0).getDate();
         }
 
-        // সব রো একসাথে ক্যালকুলেট করার ফাংশন (বোনাস/কর্তন সিলেক্ট বদলালে কাজ করবে)
         const recalcAll = () => {
             const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
             
@@ -342,7 +349,6 @@
                 const extraInput = tr.querySelector('.extra-input');
                 const absentInput = tr.querySelector('.absent-input');
                 
-                // === ভ্যালিডেশন: মাস পরিবর্তন করলে যদি আগের দেওয়া দিন বেশি হয়, তবে সেটি মুছে যাবে ===
                 if (absentInput.value !== '') {
                     const absentDays = parseFloat(absentInput.value) || 0;
                     if (absentDays > daysInMonth) {
@@ -355,11 +361,11 @@
                     if (absentDays > 0 && salaryAmount > 0) {
                         extraInput.value = Math.round((salaryAmount / daysInMonth) * absentDays);
                     } else {
-                        extraInput.value = ''; // বোনাস থেকে কর্তনে আসলে মুছে যাবে
+                        extraInput.value = ''; 
                     }
                 } else if (extraTypeSelect.value === 'bonus') {
                     if (salaryAmount > 0) {
-                        extraInput.value = Math.round(salaryAmount / 2); // কর্তন থেকে বোনাসে আসলে অর্ধেক বসে যাবে
+                        extraInput.value = Math.round(salaryAmount / 2); 
                     } else {
                         extraInput.value = '';
                     }
@@ -367,13 +373,11 @@
             });
             document.querySelectorAll('tr[data-id]').forEach(calculateRow);
             calculateGrandTotal();
-            updateTitle(); // === টাইটেল আপডেট ===
+            updateTitle();
             triggerSave();
         };
 
-        // Attach Event Listeners
         function attachListeners() {
-            // Inputs in table
             document.querySelectorAll('input[type="number"]').forEach(input => {
                 input.addEventListener('input', (e) => {
                     const tr = input.closest('tr');
@@ -381,18 +385,16 @@
                     const extraInput = tr.querySelector('.extra-input');
                     const absentInput = tr.querySelector('.absent-input');
 
-                    // === নতুন: ভ্যালিডেশন লজিক (অনুপস্থিত দিন চেক) ===
                     if (input.classList.contains('absent-input')) {
                         const inputDays = parseFloat(input.value) || 0;
                         const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
                         
                         if (inputDays > daysInMonth) {
                             alert("ভুল ইনপুট! " + monthInput.value + " মাসে সর্বোচ্চ " + daysInMonth + " দিন রয়েছে।");
-                            input.value = ''; // ভুল সংখ্যাটি মুছে দেবে
+                            input.value = ''; 
                         }
                     }
 
-                    // === Auto 50% Bonus Logic ===
                     if (input.classList.contains('salary-input') && extraTypeSelect.value === 'bonus') {
                         if (salaryAmount > 0) {
                             extraInput.value = Math.round(salaryAmount / 2);
@@ -401,12 +403,10 @@
                         }
                     }
 
-                    // === Auto Deduction Logic (Absent Days) with Validation ===
                     if ((input.classList.contains('salary-input') || input.classList.contains('absent-input')) && extraTypeSelect.value === 'deduction') {
                         let absentDays = parseFloat(absentInput.value) || 0;
                         const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
 
-                        // === নতুন: দিন ভ্যালিডেশন ===
                         if (input.classList.contains('absent-input') && absentDays > daysInMonth) {
                             alert(`Invalid input! ${monthInput.value} has only ${daysInMonth} days.`);
                             absentInput.value = '';
@@ -416,7 +416,7 @@
                         if (absentDays > 0 && salaryAmount > 0) {
                             extraInput.value = Math.round((salaryAmount / daysInMonth) * absentDays);
                         } else if (input.classList.contains('absent-input') && absentDays === 0) {
-                            extraInput.value = ''; // দিন মুছে দিলে কর্তনও মুছে যাবে
+                            extraInput.value = ''; 
                         }
                     }
 
@@ -426,11 +426,9 @@
                 });
             });
 
-            // Month and Year change events
             monthInput.addEventListener('change', recalcAll);
             yearInput.addEventListener('input', recalcAll);
 
-            // Dropdown (Bonus/Deduction) Change
             extraTypeSelect.addEventListener('change', () => {
                 if(extraTypeSelect.value === 'deduction') {
                     mainTable.classList.add('show-absent');
@@ -441,7 +439,6 @@
             });
         }
 
-        // Calculate Row Total
         function calculateRow(tr) {
             const salary = parseFloat(tr.querySelector('.salary-input').value) || 0;
             const extra = parseFloat(tr.querySelector('.extra-input').value) || 0;
@@ -460,7 +457,6 @@
             }
         }
 
-        // --- Calculate Grand Total ---
         function calculateGrandTotal() {
             let grandTotal = 0;
             document.querySelectorAll('.total-col').forEach(col => {
@@ -476,12 +472,11 @@
             }
         }
 
-        // --- LOCAL STORAGE LOGIC ---
         const STORAGE_KEY = 'madrasa_salary_data';
 
         function triggerSave() {
             clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(saveData, 500); // Save after 500ms of typing
+            saveTimeout = setTimeout(saveData, 500); 
         }
 
         function saveData() {
@@ -522,18 +517,21 @@
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
                     const id = tr.getAttribute('data-id');
                     if (data.records && data.records[id]) {
-                        tr.querySelector('.salary-input').value = data.records[id].salary || '';
+                        if(data.records[id].salary !== undefined && data.records[id].salary !== '') {
+                            tr.querySelector('.salary-input').value = data.records[id].salary;
+                        }
                         tr.querySelector('.absent-input').value = data.records[id].absent || '';
                         tr.querySelector('.extra-input').value = data.records[id].extra || '';
                         calculateRow(tr);
                     }
                 });
-                calculateGrandTotal(); 
-                updateTitle(); // === টাইটেল আপডেট ===
+            } else {
+                document.querySelectorAll('tr[data-id]').forEach(calculateRow);
             }
+            calculateGrandTotal(); 
+            updateTitle(); 
         }
 
-        // === Reset Data Logic ===
         function resetData() {
             if (confirm("Are you sure you want to clear inputs for a new month? (Salary will be kept)")) {
                 
@@ -544,16 +542,15 @@
                 extraTypeSelect.value = 'deduction';
                 mainTable.classList.add('show-absent');
                 
-                // শুধু Absent এবং Extra (Deduction/Bonus) কলাম মুছবে, Salary মুছবে না
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
                     tr.querySelector('.absent-input').value = '';
                     tr.querySelector('.extra-input').value = '';
-                    calculateRow(tr); // বেতনের টাকা দিয়ে টোটাল আপডেট হবে
+                    calculateRow(tr); 
                 });
                 
                 calculateGrandTotal();
-                updateTitle(); // === টাইটেল আপডেট ===
-                saveData(); // রিসেট করার পর বর্তমান অবস্থা সেভ করে রাখবে
+                updateTitle(); 
+                saveData(); 
             }
         }
 
@@ -564,12 +561,28 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Edit Toggle Logic
+            editToggle.checked = allowManualEdit;
+            editToggle.addEventListener('change', (e) => {
+                allowManualEdit = e.target.checked;
+                localStorage.setItem('madrasa_edit_mode', allowManualEdit);
+                
+                // সাথে সাথে সব ঘরে readonly যোগ বা রিমুভ করা
+                document.querySelectorAll('.salary-input, .extra-input').forEach(input => {
+                    if (allowManualEdit) {
+                        input.removeAttribute('readonly');
+                    } else {
+                        input.setAttribute('readonly', 'true');
+                    }
+                });
+            });
+
             const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
             monthInput.value = currentMonthName;
             
             renderTable();
             loadData();
-            updateTitle(); // === টাইটেল আপডেট ===
+            updateTitle(); 
         });
 
         if ("serviceWorker" in navigator) {
@@ -581,3 +594,5 @@
     </script>
 </body>
 </html>
+
+
