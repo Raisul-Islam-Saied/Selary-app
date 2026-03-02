@@ -8,7 +8,7 @@ const urlsToCache = [
   "./wallet.png"
 ];
 
-// INSTALL
+// ---------- INSTALL ----------
 self.addEventListener("install", event => {
   self.skipWaiting();
 
@@ -18,7 +18,7 @@ self.addEventListener("install", event => {
   );
 });
 
-// ACTIVATE → delete old caches automatically
+// ---------- ACTIVATE ----------
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -35,19 +35,41 @@ self.addEventListener("activate", event => {
   self.clients.claim();
 });
 
-// ✅ NETWORK FIRST (always check update)
+// ---------- FETCH ----------
 self.addEventListener("fetch", event => {
+
+  const request = event.request;
+  const url = new URL(request.url);
+
+  // ✅ external request cache করবে না
+  if (url.origin !== location.origin) return;
+
+  // ✅ HTML always network → update fix
+  if (request.headers.get("accept")?.includes("text/html")) {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // ✅ static file cache only
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then(networkResponse => {
 
-        // save latest version in cache
-        const responseClone = networkResponse.clone();
-        caches.open(CACHE_NAME)
-          .then(cache => cache.put(event.request, responseClone));
+        // only cache css/js/image
+        if (
+          request.destination === "style" ||
+          request.destination === "script" ||
+          request.destination === "image"
+        ) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(request, clone));
+        }
 
         return networkResponse;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(request))
   );
 });
