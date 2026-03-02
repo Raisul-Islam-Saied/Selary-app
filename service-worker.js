@@ -1,14 +1,13 @@
-// ✅ Auto cache version (no manual change needed)
+// ===== AUTO VERSION CACHE =====
 const CACHE_NAME = "salary-sheet-" + Date.now();
 
-// Files to cache first load
 const urlsToCache = [
   "./",
   "./index.html",
   "./wallet.png"
 ];
 
-// ---------- INSTALL ----------
+// ================= INSTALL =================
 self.addEventListener("install", event => {
   self.skipWaiting();
 
@@ -18,13 +17,14 @@ self.addEventListener("install", event => {
   );
 });
 
-// ---------- ACTIVATE ----------
+// ================= ACTIVATE =================
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
         keys.map(key => {
           if (key !== CACHE_NAME) {
+            console.log("Deleting old cache:", key);
             return caches.delete(key);
           }
         })
@@ -35,41 +35,33 @@ self.addEventListener("activate", event => {
   self.clients.claim();
 });
 
-// ---------- FETCH ----------
+// ================= FETCH =================
 self.addEventListener("fetch", event => {
 
-  const request = event.request;
-  const url = new URL(request.url);
+  // ✅ HTML always NETWORK FIRST
+  if (event.request.mode === "navigate") {
 
-  // ✅ external request cache করবে না
-  if (url.origin !== location.origin) return;
-
-  // ✅ HTML always network → update fix
-  if (request.headers.get("accept")?.includes("text/html")) {
     event.respondWith(
-      fetch(request).catch(() => caches.match(request))
+      fetch(event.request)
+        .then(response => {
+
+          const copy = response.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(event.request, copy));
+
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
+
     return;
   }
 
-  // ✅ static file cache only
+  // ✅ Other files → Cache First
   event.respondWith(
-    fetch(request)
-      .then(networkResponse => {
-
-        // only cache css/js/image
-        if (
-          request.destination === "style" ||
-          request.destination === "script" ||
-          request.destination === "image"
-        ) {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => cache.put(request, clone));
-        }
-
-        return networkResponse;
+    caches.match(event.request)
+      .then(cached => {
+        return cached || fetch(event.request);
       })
-      .catch(() => caches.match(request))
   );
 });
