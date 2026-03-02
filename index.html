@@ -67,7 +67,7 @@
         }
         input[type="number"] { -moz-appearance: textfield; }
 
-        /* === নতুন: Absent Column হাইড/শো করার সিএসএস === */
+        /* === Absent Column হাইড/শো করার সিএসএস === */
         .absent-col {
             display: none;
         }
@@ -149,7 +149,7 @@
                 text-align: left;
             }
 
-            /* === নতুন: প্রিন্ট করার সময় Absent কলাম সম্পূর্ণ গায়েব থাকবে === */
+            /* === প্রিন্ট করার সময় Absent কলাম সম্পূর্ণ গায়েব থাকবে === */
             .absent-col {
                 display: none !important;
             }
@@ -213,20 +213,21 @@
             </div>
         </div>
 
-        <!-- Table -->
-        <table id="main-table">
+        <!-- Table: ডিফল্টভাবে show-absent ক্লাস যুক্ত করা হলো -->
+        <table id="main-table" class="show-absent">
             <thead>
                 <tr>
                     <th style="width: 3%;">Sl.</th>
                     <th style="width: 22%; text-align: left;">Name of Employee</th>
                     <th style="width: 23%; text-align: left;">Designation</th>
                     <th style="width: 13%; text-align: center;">Salary</th>
-                    <!-- === নতুন: Absent (Days) কলাম === -->
+                    <!-- Absent (Days) কলাম -->
                     <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
                     <th style="width: 13%;">
+                        <!-- ডিফল্ট অপশন Deduction সিলেক্ট করা হলো -->
                         <select id="extra-type" class="type-select w-full text-center">
+                            <option value="deduction" selected>Deduction</option>
                             <option value="bonus">Bonus</option>
-                            <option value="deduction">Deduction</option>
                         </select>
                     </th>
                     <th style="width: 13%; text-align: center;">Total</th>
@@ -300,7 +301,6 @@
             employees.forEach(emp => {
                 const tr = document.createElement('tr');
                 tr.setAttribute('data-id', emp.id);
-                // === পরিবর্তন: absent-col যুক্ত করা হয়েছে ===
                 tr.innerHTML = `
                     <td class="text-center">${emp.id}</td>
                     <td class="name-col">${emp.name}</td>
@@ -323,20 +323,38 @@
             return new Date(year, monthIndex, 0).getDate();
         }
 
-        // সব রো একসাথে ক্যালকুলেট করার ফাংশন (মাস/বছর পরিবর্তন হলে কাজে লাগবে)
+        // সব রো একসাথে ক্যালকুলেট করার ফাংশন (বোনাস/কর্তন সিলেক্ট বদলালে কাজ করবে)
         const recalcAll = () => {
-            if (extraTypeSelect.value === 'deduction') {
-                document.querySelectorAll('tr[data-id]').forEach(tr => {
-                    const salaryAmount = parseFloat(tr.querySelector('.salary-input').value) || 0;
-                    const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
-                    const extraInput = tr.querySelector('.extra-input');
-                    
-                    if (absentDays > 0 && salaryAmount > 0) {
-                        const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
-                        extraInput.value = Math.round((salaryAmount / daysInMonth) * absentDays);
+            const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
+            
+            document.querySelectorAll('tr[data-id]').forEach(tr => {
+                const salaryAmount = parseFloat(tr.querySelector('.salary-input').value) || 0;
+                const extraInput = tr.querySelector('.extra-input');
+                const absentInput = tr.querySelector('.absent-input');
+                
+                // === ভ্যালিডেশন: মাস পরিবর্তন করলে যদি আগের দেওয়া দিন বেশি হয়, তবে সেটি মুছে যাবে ===
+                if (absentInput.value !== '') {
+                    const absentDays = parseFloat(absentInput.value) || 0;
+                    if (absentDays > daysInMonth) {
+                        absentInput.value = '';
                     }
-                });
-            }
+                }
+                
+                if (extraTypeSelect.value === 'deduction') {
+                    const absentDays = parseFloat(absentInput.value) || 0;
+                    if (absentDays > 0 && salaryAmount > 0) {
+                        extraInput.value = Math.round((salaryAmount / daysInMonth) * absentDays);
+                    } else {
+                        extraInput.value = ''; // বোনাস থেকে কর্তনে আসলে মুছে যাবে
+                    }
+                } else if (extraTypeSelect.value === 'bonus') {
+                    if (salaryAmount > 0) {
+                        extraInput.value = Math.round(salaryAmount / 2); // কর্তন থেকে বোনাসে আসলে অর্ধেক বসে যাবে
+                    } else {
+                        extraInput.value = '';
+                    }
+                }
+            });
             document.querySelectorAll('tr[data-id]').forEach(calculateRow);
             calculateGrandTotal();
             triggerSave();
@@ -351,6 +369,17 @@
                     const salaryAmount = parseFloat(tr.querySelector('.salary-input').value) || 0;
                     const extraInput = tr.querySelector('.extra-input');
                     const absentInput = tr.querySelector('.absent-input');
+
+                    // === নতুন: ভ্যালিডেশন লজিক (অনুপস্থিত দিন চেক) ===
+                    if (input.classList.contains('absent-input')) {
+                        const inputDays = parseFloat(input.value) || 0;
+                        const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
+                        
+                        if (inputDays > daysInMonth) {
+                            alert("ভুল ইনপুট! " + monthInput.value + " মাসে সর্বোচ্চ " + daysInMonth + " দিন রয়েছে।");
+                            input.value = ''; // ভুল সংখ্যাটি মুছে দেবে
+                        }
+                    }
 
                     // === Auto 50% Bonus Logic ===
                     if (input.classList.contains('salary-input') && extraTypeSelect.value === 'bonus') {
@@ -382,18 +411,14 @@
             monthInput.addEventListener('change', recalcAll);
             yearInput.addEventListener('input', recalcAll);
 
-            // Dropdown (Bonus/Deduction)
+            // Dropdown (Bonus/Deduction) Change
             extraTypeSelect.addEventListener('change', () => {
-                // কর্তন সিলেক্ট করলে absent কলাম দেখাবে
                 if(extraTypeSelect.value === 'deduction') {
                     mainTable.classList.add('show-absent');
                 } else {
                     mainTable.classList.remove('show-absent');
                 }
-                
-                document.querySelectorAll('tr[data-id]').forEach(calculateRow);
-                calculateGrandTotal(); 
-                triggerSave();
+                recalcAll(); 
             });
         }
 
@@ -469,8 +494,10 @@
                 if(data.year) yearInput.innerText = data.year;
                 if(data.type) extraTypeSelect.value = data.type;
 
-                if(data.type === 'deduction') {
+                if(extraTypeSelect.value === 'deduction') {
                     mainTable.classList.add('show-absent');
+                } else {
+                    mainTable.classList.remove('show-absent');
                 }
 
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
@@ -486,20 +513,27 @@
             }
         }
 
+        // === পরিবর্তন: Reset করলে এখন বেতনের টাকা মুছবে না ===
         function resetData() {
-            if (confirm("Are you sure you want to clear all inputs for a new month?")) {
-                localStorage.removeItem(STORAGE_KEY);
+            if (confirm("Are you sure you want to clear inputs for a new month? (Salary will be kept)")) {
                 
                 const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
                 monthInput.value = currentMonthName;
+                document.getElementById('year-input').innerText = new Date().getFullYear().toString();
                 
-                extraTypeSelect.value = 'bonus';
-                mainTable.classList.remove('show-absent');
+                extraTypeSelect.value = 'deduction';
+                mainTable.classList.add('show-absent');
                 
-                document.querySelectorAll('input[type="number"]').forEach(input => input.value = '');
-                document.querySelectorAll('.total-col').forEach(col => col.innerText = '');
-                document.getElementById('grand-total-text').innerText = '';
-            }document.getElementById('year-input').innerText = '2026';
+                // শুধু Absent এবং Extra (Deduction/Bonus) কলাম মুছবে, Salary মুছবে না
+                document.querySelectorAll('tr[data-id]').forEach(tr => {
+                    tr.querySelector('.absent-input').value = '';
+                    tr.querySelector('.extra-input').value = '';
+                    calculateRow(tr); // বেতনের টাকা দিয়ে টোটাল আপডেট হবে
+                });
+                
+                calculateGrandTotal();
+                saveData(); // রিসেট করার পর বর্তমান অবস্থা সেভ করে রাখবে
+            }
         }
 
         function showSaveStatus() {
@@ -525,3 +559,5 @@
     </script>
 </body>
 </html>
+
+
