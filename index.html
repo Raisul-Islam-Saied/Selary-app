@@ -14,15 +14,12 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #ffffff; 
-            /*min-width: 1024px;*/
             min-width: 100%;
-            
         }
         
         /* Document Container Styling */
         .document-container {
             width: 100%; 
-           /* min-height: 29.7cm;*/
             min-height: auto !important; 
             margin: 2rem auto;
             background: #ffffff;
@@ -69,6 +66,14 @@
             -webkit-appearance: none; margin: 0;
         }
         input[type="number"] { -moz-appearance: textfield; }
+
+        /* === নতুন: Absent Column হাইড/শো করার সিএসএস === */
+        .absent-col {
+            display: none;
+        }
+        .show-absent .absent-col {
+            display: table-cell;
+        }
 
         /* Highlight editable areas in web view */
         @media screen {
@@ -117,7 +122,6 @@
                 min-width: auto; 
             }
             .document-container {
-                
                 box-shadow: none !important; margin: 0 !important; padding: 0 !important;
                 border: none !important; border-radius: 0 !important;
                 width: 100% !important; max-width: 100% !important;
@@ -127,7 +131,7 @@
             th { background-color: transparent !important; color-adjust: exact; -webkit-print-color-adjust: exact; }
             th, td { border: 1px solid #000 !important; }
             .input-cell { background-color: transparent !important; box-shadow: none !important; }
-            .inline-input { border-bottom: none !important; padding: 0 !important; }
+            .inline-input { border-bottom: none !important; padding: 0 !important; padding-left: 5px !important; }
             
             /* Replace dropdown with plain text on print */
             .type-select {
@@ -135,6 +139,19 @@
                 border: none; background: transparent; color: #000;
                 font-weight: 600; font-size: 14px; padding: 0; text-align: center;
                 display: block; width: 100%;
+            }
+            
+            /* For the new month select dropdown printing */
+            #month-input {
+                appearance: none; -webkit-appearance: none;
+                background: transparent; border: none;
+                color: #000; font-family: inherit; font-size: inherit;
+                text-align: left;
+            }
+
+            /* === নতুন: প্রিন্ট করার সময় Absent কলাম সম্পূর্ণ গায়েব থাকবে === */
+            .absent-col {
+                display: none !important;
             }
         }
     </style>
@@ -175,21 +192,37 @@
         <!-- Info Section (Month & Year) -->
         <div class="flex justify-between mb-4 font-semibold text-gray-800">
             <div>
-                Month: <span class="inline-input" id="month-input" contenteditable="true" data-key="month"></span>
+                Month: 
+                <select class="inline-input" id="month-input" data-key="month" style="appearance: none; -webkit-appearance: none; cursor: pointer; text-align: left; background: transparent; font-family: inherit; font-size: inherit; color: inherit;">
+                    <option value="January">January</option>
+                    <option value="February">February</option>
+                    <option value="March">March</option>
+                    <option value="April">April</option>
+                    <option value="May">May</option>
+                    <option value="June">June</option>
+                    <option value="July">July</option>
+                    <option value="August">August</option>
+                    <option value="September">September</option>
+                    <option value="October">October</option>
+                    <option value="November">November</option>
+                    <option value="December">December</option>
+                </select>
             </div>
             <div>
-                Year: <span class="inline-input" id="year-input" contenteditable="true" data-key="year"></span>
+                Year: <span class="inline-input" id="year-input" contenteditable="true" data-key="year">2026</span>
             </div>
         </div>
 
         <!-- Table -->
-        <table>
+        <table id="main-table">
             <thead>
                 <tr>
                     <th style="width: 3%;">Sl.</th>
                     <th style="width: 22%; text-align: left;">Name of Employee</th>
                     <th style="width: 23%; text-align: left;">Designation</th>
                     <th style="width: 13%; text-align: center;">Salary</th>
+                    <!-- === নতুন: Absent (Days) কলাম === -->
+                    <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
                     <th style="width: 13%;">
                         <select id="extra-type" class="type-select w-full text-center">
                             <option value="bonus">Bonus</option>
@@ -258,6 +291,7 @@
         const monthInput = document.getElementById('month-input');
         const yearInput = document.getElementById('year-input');
         const extraTypeSelect = document.getElementById('extra-type');
+        const mainTable = document.getElementById('main-table');
         let saveTimeout;
 
         // Initialize Table
@@ -266,11 +300,13 @@
             employees.forEach(emp => {
                 const tr = document.createElement('tr');
                 tr.setAttribute('data-id', emp.id);
+                // === পরিবর্তন: absent-col যুক্ত করা হয়েছে ===
                 tr.innerHTML = `
                     <td class="text-center">${emp.id}</td>
                     <td class="name-col">${emp.name}</td>
                     <td>${emp.desig}</td>
                     <td class="input-cell"><input type="number" class="salary-input" data-field="salary"></td>
+                    <td class="input-cell absent-col"><input type="number" class="absent-input" placeholder="0"></td>
                     <td class="input-cell"><input type="number" class="extra-input" data-field="extra"></td>
                     <td class="text-right font-semibold total-col"></td>
                     <td></td>
@@ -280,40 +316,83 @@
             attachListeners();
         }
 
+        // মাসের দিনের সংখ্যা বের করার ফাংশন
+        function getDaysInMonth(monthName, yearStr) {
+            const year = parseInt(yearStr) || new Date().getFullYear();
+            const monthIndex = new Date(Date.parse(monthName + " 1, 2020")).getMonth() + 1;
+            return new Date(year, monthIndex, 0).getDate();
+        }
+
+        // সব রো একসাথে ক্যালকুলেট করার ফাংশন (মাস/বছর পরিবর্তন হলে কাজে লাগবে)
+        const recalcAll = () => {
+            if (extraTypeSelect.value === 'deduction') {
+                document.querySelectorAll('tr[data-id]').forEach(tr => {
+                    const salaryAmount = parseFloat(tr.querySelector('.salary-input').value) || 0;
+                    const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
+                    const extraInput = tr.querySelector('.extra-input');
+                    
+                    if (absentDays > 0 && salaryAmount > 0) {
+                        const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
+                        extraInput.value = Math.round((salaryAmount / daysInMonth) * absentDays);
+                    }
+                });
+            }
+            document.querySelectorAll('tr[data-id]').forEach(calculateRow);
+            calculateGrandTotal();
+            triggerSave();
+        };
+
         // Attach Event Listeners
         function attachListeners() {
             // Inputs in table
             document.querySelectorAll('input[type="number"]').forEach(input => {
                 input.addEventListener('input', (e) => {
                     const tr = input.closest('tr');
+                    const salaryAmount = parseFloat(tr.querySelector('.salary-input').value) || 0;
+                    const extraInput = tr.querySelector('.extra-input');
+                    const absentInput = tr.querySelector('.absent-input');
 
                     // === Auto 50% Bonus Logic ===
-                    // যদি 'Bonus' সিলেক্ট থাকে এবং শুধু 'Salary' এর ঘরে টাইপ করা হয়
                     if (input.classList.contains('salary-input') && extraTypeSelect.value === 'bonus') {
-                        const salaryAmount = parseFloat(input.value) || 0;
-                        const extraInput = tr.querySelector('.extra-input');
-                        
                         if (salaryAmount > 0) {
-                            extraInput.value = salaryAmount / 2; // বেতনের অর্ধেক
+                            extraInput.value = Math.round(salaryAmount / 2);
                         } else {
-                            extraInput.value = ''; // বেতন মুছে দিলে বোনাসও মুছে যাবে
+                            extraInput.value = ''; 
+                        }
+                    }
+
+                    // === Auto Deduction Logic (Absent Days) ===
+                    if ((input.classList.contains('salary-input') || input.classList.contains('absent-input')) && extraTypeSelect.value === 'deduction') {
+                        const absentDays = parseFloat(absentInput.value) || 0;
+                        if (absentDays > 0 && salaryAmount > 0) {
+                            const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
+                            extraInput.value = Math.round((salaryAmount / daysInMonth) * absentDays);
+                        } else if (input.classList.contains('absent-input') && absentDays === 0) {
+                            extraInput.value = ''; // দিন মুছে দিলে কর্তনও মুছে যাবে
                         }
                     }
 
                     calculateRow(tr);
-                    calculateGrandTotal(); // Call Grand Total
+                    calculateGrandTotal(); 
                     triggerSave();
                 });
             });
 
-            // Month and Year
-            monthInput.addEventListener('input', triggerSave);
-            yearInput.addEventListener('input', triggerSave);
+            // Month and Year change events
+            monthInput.addEventListener('change', recalcAll);
+            yearInput.addEventListener('input', recalcAll);
 
             // Dropdown (Bonus/Deduction)
             extraTypeSelect.addEventListener('change', () => {
+                // কর্তন সিলেক্ট করলে absent কলাম দেখাবে
+                if(extraTypeSelect.value === 'deduction') {
+                    mainTable.classList.add('show-absent');
+                } else {
+                    mainTable.classList.remove('show-absent');
+                }
+                
                 document.querySelectorAll('tr[data-id]').forEach(calculateRow);
-                calculateGrandTotal(); // Call Grand Total
+                calculateGrandTotal(); 
                 triggerSave();
             });
         }
@@ -330,7 +409,6 @@
             }
             
             const totalCol = tr.querySelector('.total-col');
-            // If total is 0 and no input is given, leave it blank. Otherwise show total.
             if(total === 0 && !tr.querySelector('.salary-input').value && !tr.querySelector('.extra-input').value) {
                 totalCol.innerText = '';
             } else {
@@ -364,7 +442,7 @@
 
         function saveData() {
             const data = {
-                month: monthInput.innerText,
+                month: monthInput.value,
                 year: yearInput.innerText,
                 type: extraTypeSelect.value,
                 records: {}
@@ -373,8 +451,9 @@
             document.querySelectorAll('tr[data-id]').forEach(tr => {
                 const id = tr.getAttribute('data-id');
                 const s = tr.querySelector('.salary-input').value;
+                const a = tr.querySelector('.absent-input').value;
                 const e = tr.querySelector('.extra-input').value;
-                data.records[id] = { salary: s, extra: e };
+                data.records[id] = { salary: s, absent: a, extra: e };
             });
 
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -386,51 +465,63 @@
             if (saved) {
                 const data = JSON.parse(saved);
                 
-                // Load Headers
-                if(data.month) monthInput.innerText = data.month;
+                if(data.month) monthInput.value = data.month;
                 if(data.year) yearInput.innerText = data.year;
                 if(data.type) extraTypeSelect.value = data.type;
 
-                // Load Rows
+                if(data.type === 'deduction') {
+                    mainTable.classList.add('show-absent');
+                }
+
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
                     const id = tr.getAttribute('data-id');
                     if (data.records && data.records[id]) {
                         tr.querySelector('.salary-input').value = data.records[id].salary || '';
+                        tr.querySelector('.absent-input').value = data.records[id].absent || '';
                         tr.querySelector('.extra-input').value = data.records[id].extra || '';
                         calculateRow(tr);
                     }
                 });
-                calculateGrandTotal(); // Init Grand Total on load
+                calculateGrandTotal(); 
             }
         }
 
         function resetData() {
             if (confirm("Are you sure you want to clear all inputs for a new month?")) {
                 localStorage.removeItem(STORAGE_KEY);
-                monthInput.innerText = '';
-                // Keep the year intact usually, or clear it if you want
+                
+                const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
+                monthInput.value = currentMonthName;
+                
                 extraTypeSelect.value = 'bonus';
+                mainTable.classList.remove('show-absent');
                 
                 document.querySelectorAll('input[type="number"]').forEach(input => input.value = '');
                 document.querySelectorAll('.total-col').forEach(col => col.innerText = '');
-                document.getElementById('grand-total-text').innerText = ''; // Clear Grand Total
-            }
+                document.getElementById('grand-total-text').innerText = '';
+            }document.getElementById('year-input').innerText = '2026';
         }
+
         function showSaveStatus() {
             const status = document.getElementById('save-status');
             status.style.opacity = '1';
             setTimeout(() => { status.style.opacity = '0'; }, 2000);
         }
+
         document.addEventListener('DOMContentLoaded', () => {
+            const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
+            monthInput.value = currentMonthName;
+            
             renderTable();
             loadData();
         });
+
         if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/service-worker.js")
-    .then(reg => {
-      reg.update();
-    });
-}
+            navigator.serviceWorker.register("/service-worker.js")
+            .then(reg => {
+                reg.update();
+            });
+        }
     </script>
 </body>
-  </html>
+</html>
