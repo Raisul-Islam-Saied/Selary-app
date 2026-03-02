@@ -37,7 +37,7 @@
         
         th, td {
             border: 1px solid #1f2937; 
-            padding: 9px 10px;
+            padding: 10px 10px;
             color: #111827;
             font-size: 14px;
         }
@@ -185,12 +185,14 @@
         </div>
 
         <!-- Document Title -->
-        <div style="margin-top: 75px" class="text-center mb-6">
-            <h2 class="text-xl font-bold inline-block border-b-2 border-black pb-1 uppercase tracking-wider">Salary Statement</h2>
+        <div style="margin-top: 80px" class="text-center mb-6">
+            <!-- === পরিবর্তন: ID যুক্ত করা হয়েছে যাতে জাভাস্ক্রিপ্ট দিয়ে টাইটেল বদলানো যায় === -->
+            <h2 id="statement-title" class="text-xl font-bold inline-block border-b-2 border-black pb-1 uppercase tracking-wider">Salary Statement</h2>
         </div>
 
         <!-- Info Section (Month & Year) -->
-        <div class="flex justify-between mb-4 font-semibold text-gray-800">
+        <!-- === পরিবর্তন: প্রিন্টের সময় এই অংশটি হাইড করতে no-print ক্লাস যোগ করা হয়েছে === -->
+        <div class="flex justify-between mb-4 font-semibold text-gray-800 no-print">
             <div>
                 Month: 
                 <select class="inline-input" id="month-input" data-key="month" style="appearance: none; -webkit-appearance: none; cursor: pointer; text-align: left; background: transparent; font-family: inherit; font-size: inherit; color: inherit;">
@@ -247,7 +249,7 @@
         </div>
 
         <!-- Signatures -->
-        <div style="margin-top:65px;" class="flex justify-between text-center text-sm font-bold">
+        <div style="margin-top:70px;" class="flex justify-between text-center text-sm font-bold">
             <div>
                 <div class="border-t border-black w-32 mx-auto mb-1"></div>
                 <p>Prepared By</p>
@@ -294,6 +296,14 @@
         const extraTypeSelect = document.getElementById('extra-type');
         const mainTable = document.getElementById('main-table');
         let saveTimeout;
+
+        // === নতুন: টাইটেল আপডেট করার ফাংশন ===
+        function updateTitle() {
+            const titleEl = document.getElementById('statement-title');
+            if (titleEl) {
+                titleEl.innerText = `Salary Statement of ${monthInput.value} - ${yearInput.innerText}`;
+            }
+        }
 
         // Initialize Table
         function renderTable() {
@@ -357,6 +367,7 @@
             });
             document.querySelectorAll('tr[data-id]').forEach(calculateRow);
             calculateGrandTotal();
+            updateTitle(); // === টাইটেল আপডেট ===
             triggerSave();
         };
 
@@ -390,11 +401,19 @@
                         }
                     }
 
-                    // === Auto Deduction Logic (Absent Days) ===
+                    // === Auto Deduction Logic (Absent Days) with Validation ===
                     if ((input.classList.contains('salary-input') || input.classList.contains('absent-input')) && extraTypeSelect.value === 'deduction') {
-                        const absentDays = parseFloat(absentInput.value) || 0;
+                        let absentDays = parseFloat(absentInput.value) || 0;
+                        const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
+
+                        // === নতুন: দিন ভ্যালিডেশন ===
+                        if (input.classList.contains('absent-input') && absentDays > daysInMonth) {
+                            alert(`Invalid input! ${monthInput.value} has only ${daysInMonth} days.`);
+                            absentInput.value = '';
+                            absentDays = 0;
+                        }
+
                         if (absentDays > 0 && salaryAmount > 0) {
-                            const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
                             extraInput.value = Math.round((salaryAmount / daysInMonth) * absentDays);
                         } else if (input.classList.contains('absent-input') && absentDays === 0) {
                             extraInput.value = ''; // দিন মুছে দিলে কর্তনও মুছে যাবে
@@ -510,10 +529,11 @@
                     }
                 });
                 calculateGrandTotal(); 
+                updateTitle(); // === টাইটেল আপডেট ===
             }
         }
 
-        // === পরিবর্তন: Reset করলে এখন বেতনের টাকা মুছবে না ===
+        // === Reset Data Logic ===
         function resetData() {
             if (confirm("Are you sure you want to clear inputs for a new month? (Salary will be kept)")) {
                 
@@ -532,6 +552,7 @@
                 });
                 
                 calculateGrandTotal();
+                updateTitle(); // === টাইটেল আপডেট ===
                 saveData(); // রিসেট করার পর বর্তমান অবস্থা সেভ করে রাখবে
             }
         }
@@ -548,6 +569,7 @@
             
             renderTable();
             loadData();
+            updateTitle(); // === টাইটেল আপডেট ===
         });
 
         if ("serviceWorker" in navigator) {
@@ -559,5 +581,3 @@
     </script>
 </body>
 </html>
-
-
