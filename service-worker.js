@@ -1,59 +1,57 @@
 // ===============================
-// SALARY APP FINAL SERVICE WORKER
+// SUPER FAST SERVICE WORKER
+// Strategy: Stale-While-Revalidate
 // ===============================
 
-// ✅ Manual version only when update needed
-const CACHE_NAME = "salary-sheet-v1";
-
+const CACHE_NAME = "salary-sheet-v3"; // নতুন আপডেট দিলে v4, v5 করবেন
 
 // ------------ INSTALL ------------
 self.addEventListener("install", event => {
-  self.skipWaiting();
+  self.skipWaiting(); // দ্রুত ইন্সটল হওয়ার জন্য
 });
-
 
 // ------------ ACTIVATE ------------
 self.addEventListener("activate", event => {
-
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
         keys.map(key => {
           if (key !== CACHE_NAME) {
-            return caches.delete(key);
+            return caches.delete(key); // পুরোনো ক্যাশ ডিলিট করে জায়গা খালি করবে
           }
         })
       )
     )
   );
-
   self.clients.claim();
 });
 
-
-// ------------ FETCH ------------
+// ------------ FETCH (SUPER FAST STRATEGY) ------------
 self.addEventListener("fetch", event => {
-
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
+  if (!url.protocol.startsWith('http')) return;
 
-  // ✅ External API bypass
-  if (url.origin !== location.origin) return;
-
-  // ✅ NETWORK FIRST
+  // Stale-While-Revalidate Strategy
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
+    caches.match(event.request).then(cachedResponse => {
+      
+      // ব্যাকগ্রাউন্ডে নেটওয়ার্ক থেকে নতুন ডেটা আনবে এবং ক্যাশ আপডেট করবে
+      const fetchPromise = fetch(event.request).then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200 && (networkResponse.type === 'basic' || networkResponse.type === 'cors')) {
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, networkResponse.clone());
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        // অফলাইনে থাকলে কোনো এরর দেখাবে না
+      });
 
-        const clone = response.clone();
-
-        caches.open(CACHE_NAME)
-          .then(cache => cache.put(event.request, clone));
-
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+      // যদি ক্যাশে ফাইল থাকে, সাথে সাথে দিয়ে দেবে (Instant Load)। 
+      // না থাকলে ইন্টারনেট থেকে আনবে।
+      return cachedResponse || fetchPromise;
+    })
   );
-
 });
