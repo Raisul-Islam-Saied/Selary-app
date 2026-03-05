@@ -159,7 +159,10 @@
                 color: #000; font-family: inherit; font-size: inherit;
                 text-align: left;
             }
-
+th:last-child,
+  td:last-child {
+    display: table-cell !important;
+  }
             /* === প্রিন্ট করার সময় Absent কলাম সম্পূর্ণ গায়েব থাকবে === */
             .absent-col {
                 display: none !important;
@@ -206,7 +209,7 @@
         </div>
 
         <!-- Info Section (Month & Year) -->
-        <div class="flex justify-between mb-4 font-semibold text-gray-800 no-print">
+        <div class="flex justify-between mb-4 font-semibold text-gray-800 no-print text-xl">
             <div>
                 Month: 
                 <select class="inline-input" id="month-input" data-key="month" style="appearance: none; -webkit-appearance: none; cursor: pointer; text-align: left; background: transparent; font-family: inherit; font-size: inherit; color: inherit;">
