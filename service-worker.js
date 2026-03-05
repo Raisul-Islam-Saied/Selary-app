@@ -3,7 +3,7 @@
 // ===============================
 
 // 🔁 Version change করলে নতুন cache হবে
-const CACHE_NAME = "salary-sheet-v3";
+const CACHE_NAME = "salary-sheet-v4";
 
 // 📦 Cache করার সব ফাইল
 const FILES_TO_CACHE = [
