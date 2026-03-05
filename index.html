@@ -598,13 +598,18 @@ th:last-child,
             loadData();
             updateTitle(); 
         });
-document.addEventListener("focusin", function(e) {
+
+        document.addEventListener("focusin", function (e) {
 
   if (e.target.type === "number") {
 
-    let value = e.target.value;
+    setTimeout(() => {
 
-    e.target.setSelectionRange(value.length, value.length);
+      const len = e.target.value.length;
+
+      e.target.setSelectionRange(len, len);
+
+    }, 0);
 
   }
 
