@@ -586,10 +586,37 @@
         });
 
         if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("/service-worker.js")
-            .then(reg => {
-                reg.update();
-            });
+
+  navigator.serviceWorker.register("./service-worker.js")
+  .then(reg => {
+
+    // প্রতি load এ update check
+    reg.update();
+
+    // নতুন SW detect
+    reg.onupdatefound = () => {
+
+      const newWorker = reg.installing;
+
+      newWorker.onstatechange = () => {
+
+        if (newWorker.state === "installed") {
+
+          if (navigator.serviceWorker.controller) {
+
+            // auto reload
+            window.location.reload();
+
+          }
+
+        }
+
+      };
+
+    };
+
+  });
+
         }
     </script>
 </body>
