@@ -598,7 +598,14 @@ th:last-child,
             loadData();
             updateTitle(); 
         });
+// input click করলে পুরো value select
+document.addEventListener("focusin", function(e) {
 
+  if (e.target.type === "number") {
+    e.target.select();
+  }
+
+});
         if ("serviceWorker" in navigator) {
 
   navigator.serviceWorker.register("./service-worker.js")
