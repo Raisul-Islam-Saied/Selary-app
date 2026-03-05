@@ -1,14 +1,32 @@
 // ===============================
-// SALARY APP FINAL SERVICE WORKER
+// SALARY APP OFFLINE SERVICE WORKER
 // ===============================
 
-// ✅ Manual version only when update needed
-const CACHE_NAME = "salary-sheet-v1";
+// 🔁 Version change করলে নতুন cache হবে
+const CACHE_NAME = "salary-sheet-v2";
+
+// 📦 Cache করার সব ফাইল
+const FILES_TO_CACHE = [
+  "/",
+  "/index.html",
+  "/manifest.json",
+  "/wallet.png",
+  "/service-worker.js"
+];
 
 
 // ------------ INSTALL ------------
 self.addEventListener("install", event => {
+
   self.skipWaiting();
+
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        return cache.addAll(FILES_TO_CACHE);
+      })
+  );
+
 });
 
 
@@ -28,6 +46,7 @@ self.addEventListener("activate", event => {
   );
 
   self.clients.claim();
+
 });
 
 
@@ -36,24 +55,31 @@ self.addEventListener("fetch", event => {
 
   if (event.request.method !== "GET") return;
 
-  const url = new URL(event.request.url);
-
-  // ✅ External API bypass
-  if (url.origin !== location.origin) return;
-
-  // ✅ NETWORK FIRST
   event.respondWith(
-    fetch(event.request)
+
+    caches.match(event.request)
       .then(response => {
 
-        const clone = response.clone();
+        // যদি cache থাকে
+        if (response) {
+          return response;
+        }
 
-        caches.open(CACHE_NAME)
-          .then(cache => cache.put(event.request, clone));
+        // না থাকলে network
+        return fetch(event.request)
+          .then(networkResponse => {
 
-        return response;
+            const clone = networkResponse.clone();
+
+            caches.open(CACHE_NAME)
+              .then(cache => cache.put(event.request, clone));
+
+            return networkResponse;
+
+          });
+
       })
-      .catch(() => caches.match(event.request))
+
   );
 
 });
