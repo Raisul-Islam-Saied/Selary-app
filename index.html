@@ -338,10 +338,10 @@ th:last-child,
                     <td class="text-center">${emp.id}</td>
                     <td class="name-col">${emp.name}</td>
                     <td>${emp.desig}</td>
-                    <td class="input-cell"><input type="text" inputmode="numeric" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
-<td class="input-cell absent-col"><input type="text" inputmode="numeric" class="absent-input" placeholder="0"></td>
-<td class="input-cell"><input type="text" inputmode="numeric" class="extra-input" data-field="extra" ${readonlyAttr}></td>
-                     <td class="text-right font-semibold total-col"></td>
+                    <td class="input-cell"><input type="number" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
+                    <td class="input-cell absent-col"><input type="number" class="absent-input" placeholder="0"></td>
+                    <td class="input-cell"><input type="number" class="extra-input" data-field="extra" ${readonlyAttr}></td>
+                    <td class="text-right font-semibold total-col"></td>
                     <td></td>
                 `;
                 tbody.appendChild(tr);
@@ -599,25 +599,18 @@ th:last-child,
             updateTitle(); 
         });
 
-        // কার্সর শেষে নেওয়ার লজিক
-document.addEventListener("focusin", function (e) {
-    if (e.target.tagName === 'INPUT' && e.target.getAttribute('inputmode') === 'numeric') {
-        const inputElement = e.target;
-        setTimeout(() => {
-            const len = inputElement.value.length;
-            inputElement.setSelectionRange(len, len);
-        }, 10);
-    }
-});
-
-// শুধুমাত্র সংখ্যা টাইপ করতে দেওয়ার ফিল্টার
-document.addEventListener("input", function (e) {
-    if (e.target.tagName === 'INPUT' && e.target.getAttribute('inputmode') === 'numeric') {
-        const newValue = e.target.value.replace(/[^0-9.]/g, ''); // দশমিক (.) অ্যালাউ করা হলো
-        if(e.target.value !== newValue) {
-            e.target.value = newValue;
-        }
-    }
+        document.addEventListener("focusin", function (e) {
+  if (e.target.type === "number") {
+    setTimeout(() => {
+      // ইনপুটের বর্তমান ভ্যালু সেভ করে রাখা হলো
+      const val = e.target.value;
+      
+      // ভ্যালু মুছে দিয়ে সাথে সাথে আবার বসিয়ে দেওয়া হলো
+      e.target.value = '';
+      e.target.value = val;
+      
+    }, 10);
+  }
 });
 
         if ("serviceWorker" in navigator) {
