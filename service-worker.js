@@ -1,52 +1,19 @@
 // ===============================
-// SALARY APP OFFLINE SERVICE WORKER
+// SALARY SHEET FAST OFFLINE SW
 // ===============================
 
-// 🔁 Version change করলে নতুন cache হবে
-const CACHE_NAME = "salary-sheet-v4";
-
-// 📦 Cache করার সব ফাইল
-const FILES_TO_CACHE = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/wallet.png",
-  "/service-worker.js"
-];
+const CACHE_NAME = "salary-sheet-cache";
 
 
 // ------------ INSTALL ------------
 self.addEventListener("install", event => {
-
   self.skipWaiting();
-
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(FILES_TO_CACHE);
-      })
-  );
-
 });
 
 
 // ------------ ACTIVATE ------------
 self.addEventListener("activate", event => {
-
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      )
-    )
-  );
-
   self.clients.claim();
-
 });
 
 
@@ -55,18 +22,17 @@ self.addEventListener("fetch", event => {
 
   if (event.request.method !== "GET") return;
 
+  const url = new URL(event.request.url);
+
+  // external resource bypass
+  if (url.origin !== location.origin) return;
+
   event.respondWith(
 
     caches.match(event.request)
-      .then(response => {
+      .then(cachedResponse => {
 
-        // যদি cache থাকে
-        if (response) {
-          return response;
-        }
-
-        // না থাকলে network
-        return fetch(event.request)
+        const networkFetch = fetch(event.request)
           .then(networkResponse => {
 
             const clone = networkResponse.clone();
@@ -76,7 +42,11 @@ self.addEventListener("fetch", event => {
 
             return networkResponse;
 
-          });
+          })
+          .catch(() => cachedResponse);
+
+        // cache থাকলে instant load
+        return cachedResponse || networkFetch;
 
       })
 
