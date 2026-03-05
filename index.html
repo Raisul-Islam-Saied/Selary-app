@@ -598,11 +598,14 @@ th:last-child,
             loadData();
             updateTitle(); 
         });
-// input click করলে পুরো value select
 document.addEventListener("focusin", function(e) {
 
   if (e.target.type === "number") {
-    e.target.select();
+
+    let value = e.target.value;
+
+    e.target.setSelectionRange(value.length, value.length);
+
   }
 
 });
