@@ -5,7 +5,7 @@ const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/manifest.json',
-    '/logo.png'
+    '/wallet.png'
 ];
 
 // ১. Install Event - প্রি-ক্যাশিং এবং সাথে সাথে আপডেট
