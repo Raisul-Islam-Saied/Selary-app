@@ -110,11 +110,9 @@
             }
 
             th:last-child,
-  td:last-child {
-    display: none;
-  }
-
-
+            td:last-child {
+                display: none;
+            }
         }
 
         /* Print Specific Styles */
@@ -159,10 +157,10 @@
                 color: #000; font-family: inherit; font-size: inherit;
                 text-align: left;
             }
-th:last-child,
-  td:last-child {
-    display: table-cell !important;
-  }
+            th:last-child,
+            td:last-child {
+                display: table-cell !important;
+            }
             /* === প্রিন্ট করার সময় Absent কলাম সম্পূর্ণ গায়েব থাকবে === */
             .absent-col {
                 display: none !important;
@@ -181,7 +179,6 @@ th:last-child,
             </button>
             <span id="save-status" class="text-sm text-green-600 font-medium opacity-0 transition-opacity duration-300">✓ Auto-saved</span>
         </div>
-        <!-- === নতুন: Unlock Edit চেকবক্স যুক্ত করা হয়েছে === -->
         <div class="flex items-center gap-5">
             <label class="flex items-center gap-2 cursor-pointer select-none text-gray-700 font-medium">
                 <input type="checkbox" id="edit-toggle" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
@@ -257,7 +254,7 @@ th:last-child,
             </tbody>
         </table>
 
-        <!-- === টেবিলের বাইরে Grand Total === -->
+        <!-- Grand Total -->
         <div class="flex justify-end mt-4 pr-4">
             <div class="text-lg font-bold text-black pb-1">
                 Grand Total: <span id="grand-total-text" class="ml-3 inline-block min-w-[100px] text-right"></span>/=
@@ -287,8 +284,6 @@ th:last-child,
 
     <!-- Logic Script -->
     <script>
-        // === কন্ট্রোল প্যানেল স্টোরেজ থেকে পড়া হচ্ছে ===
-        // ডিফল্ট false থাকবে, সেভ করা থাকলে সেটা নেবে।
         let allowManualEdit = localStorage.getItem('madrasa_edit_mode') === 'true';
 
         // Employee Data
@@ -307,7 +302,7 @@ th:last-child,
             { id: 12, name: "Raisul Islam Saied", desig: "Assistant Teacher", defaultSalary: 3300 },
             { id: 13, name: "Fahmida Sikder Jhuma", desig: "Assistant Teacher", defaultSalary: 3300 },
             { id: 14, name: "Urmi Karim Samu", desig: "Assistant Teacher", defaultSalary: 3300 },
-             { id: 15, name: "Arifa Akter", desig: "Assistant Teacher", defaultSalary: 2000 },
+            { id: 15, name: "Arifa Akter", desig: "Assistant Teacher", defaultSalary: 2000 },
             { id: 16, name: "Niamat Ali", desig: "Office Assistant", defaultSalary: 2600 }
         ];
 
@@ -445,11 +440,8 @@ th:last-child,
             yearInput.addEventListener('input', recalcAll);
 
             extraTypeSelect.addEventListener('change', () => {
-                if(extraTypeSelect.value === 'deduction') {
-                    mainTable.classList.add('show-absent');
-                } else {
-                    mainTable.classList.remove('show-absent');
-                }
+                // সব সময় Absent কলাম দৃশ্যমান থাকবে 
+                mainTable.classList.add('show-absent');
                 recalcAll(); 
             });
         }
@@ -457,11 +449,25 @@ th:last-child,
         function calculateRow(tr) {
             const salary = parseFloat(tr.querySelector('.salary-input').value) || 0;
             const extra = parseFloat(tr.querySelector('.extra-input').value) || 0;
+            const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
             const isBonus = extraTypeSelect.value === 'bonus';
             
+            // কর্তনের হিসাব (উভয় ক্ষেত্রেই)
+            let deduction = 0;
+            if (absentDays > 0 && salary > 0) {
+                const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
+                deduction = Math.round((salary / daysInMonth) * absentDays);
+            }
+
             let total = 0;
             if (salary > 0 || extra > 0) {
-                total = isBonus ? (salary + extra) : (salary - extra);
+                if (isBonus) {
+                    // বোনাস থাকলে: (বেতন - কর্তন) + বোনাস
+                    total = (salary - deduction) + extra;
+                } else {
+                    // কর্তন মোডে extra টাই হচ্ছে মূল কর্তন
+                    total = salary - extra;
+                }
             }
             
             const totalCol = tr.querySelector('.total-col');
@@ -470,6 +476,10 @@ th:last-child,
             } else {
                 totalCol.innerText = total.toLocaleString('en-IN');
             }
+
+            // প্রিন্টের সময় বেতন কলামে কর্তন-পরবর্তী বেতন দেখানোর জন্য ডাটা সেভ রাখা হলো
+            tr.dataset.baseSalary = tr.querySelector('.salary-input').value;
+            tr.dataset.deduction = deduction;
         }
 
         function calculateGrandTotal() {
@@ -516,18 +526,15 @@ th:last-child,
 
         function loadData() {
             const saved = localStorage.getItem(STORAGE_KEY);
+            // ডাটা লোড করার সময়ও Absent কলাম দৃশ্যমান রাখা
+            mainTable.classList.add('show-absent');
+
             if (saved) {
                 const data = JSON.parse(saved);
                 
                 if(data.month) monthInput.value = data.month;
                 if(data.year) yearInput.innerText = data.year;
                 if(data.type) extraTypeSelect.value = data.type;
-
-                if(extraTypeSelect.value === 'deduction') {
-                    mainTable.classList.add('show-absent');
-                } else {
-                    mainTable.classList.remove('show-absent');
-                }
 
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
                     const id = tr.getAttribute('data-id');
@@ -575,14 +582,41 @@ th:last-child,
             setTimeout(() => { status.style.opacity = '0'; }, 2000);
         }
 
+        // === প্রিন্ট করার ঠিক আগে বেতনের মান পরিবর্তন করার লজিক ===
+        window.addEventListener('beforeprint', () => {
+            if (extraTypeSelect.value === 'bonus') {
+                document.querySelectorAll('tr[data-id]').forEach(tr => {
+                    const salaryInput = tr.querySelector('.salary-input');
+                    const baseSalary = parseFloat(tr.dataset.baseSalary) || 0;
+                    const deduction = parseFloat(tr.dataset.deduction) || 0;
+                    
+                    // বেতনের কলামে কর্তন-পরবর্তী বেতন বসিয়ে দেওয়া হলো
+                    if (baseSalary > 0 && deduction > 0) {
+                        salaryInput.value = baseSalary - deduction;
+                    }
+                });
+            }
+        });
+
+        // === প্রিন্ট হওয়ার পর আবার মূল বেতনে ফিরিয়ে আনার লজিক ===
+        window.addEventListener('afterprint', () => {
+            if (extraTypeSelect.value === 'bonus') {
+                document.querySelectorAll('tr[data-id]').forEach(tr => {
+                    const salaryInput = tr.querySelector('.salary-input');
+                    const rawBaseSalary = tr.dataset.baseSalary;
+                    if (rawBaseSalary !== undefined) {
+                        salaryInput.value = rawBaseSalary;
+                    }
+                });
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
-            // Edit Toggle Logic
             editToggle.checked = allowManualEdit;
             editToggle.addEventListener('change', (e) => {
                 allowManualEdit = e.target.checked;
                 localStorage.setItem('madrasa_edit_mode', allowManualEdit);
                 
-                // সাথে সাথে সব ঘরে readonly যোগ বা রিমুভ করা
                 document.querySelectorAll('.salary-input, .extra-input').forEach(input => {
                     if (allowManualEdit) {
                         input.removeAttribute('readonly');
@@ -601,52 +635,31 @@ th:last-child,
         });
 
         document.addEventListener("focusin", function (e) {
-  if (e.target.type === "number") {
-    setTimeout(() => {
-      // ইনপুটের বর্তমান ভ্যালু সেভ করে রাখা হলো
-      const val = e.target.value;
-      
-      // ভ্যালু মুছে দিয়ে সাথে সাথে আবার বসিয়ে দেওয়া হলো
-      e.target.value = '';
-      e.target.value = val;
-      
-    }, 10);
-  }
-});
+            if (e.target.type === "number") {
+                setTimeout(() => {
+                    const val = e.target.value;
+                    e.target.value = '';
+                    e.target.value = val;
+                }, 10);
+            }
+        });
 
         if ("serviceWorker" in navigator) {
-
-  navigator.serviceWorker.register("./service-worker.js")
-  .then(reg => {
-
-    // প্রতি load এ update check
-    reg.update();
-
-    // নতুন SW detect
-    reg.onupdatefound = () => {
-
-      const newWorker = reg.installing;
-
-      newWorker.onstatechange = () => {
-
-        if (newWorker.state === "installed") {
-
-          if (navigator.serviceWorker.controller) {
-
-            // auto reload
-            window.location.reload();
-
-          }
-
-        }
-
-      };
-
-    };
-
-  });
-
+            navigator.serviceWorker.register("./service-worker.js")
+            .then(reg => {
+                reg.update();
+                reg.onupdatefound = () => {
+                    const newWorker = reg.installing;
+                    newWorker.onstatechange = () => {
+                        if (newWorker.state === "installed") {
+                            if (navigator.serviceWorker.controller) {
+                                window.location.reload();
+                            }
+                        }
+                    };
+                };
+            });
         }
     </script>
 </body>
-                    </html>
+</html>
