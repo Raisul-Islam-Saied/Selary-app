@@ -180,6 +180,12 @@
             <span id="save-status" class="text-sm text-green-600 font-medium opacity-0 transition-opacity duration-300">✓ Auto-saved</span>
         </div>
         <div class="flex items-center gap-5">
+            <!-- === নতুন: Fix Base চেকবক্স (সবসময় দৃশ্যমান থাকবে) === -->
+            <label class="flex items-center gap-2 cursor-pointer select-none text-gray-700 font-medium">
+                <input type="checkbox" id="fix-base-toggle" class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                <span class="text-green-700">Fix Base</span>
+            </label>
+
             <label class="flex items-center gap-2 cursor-pointer select-none text-gray-700 font-medium">
                 <input type="checkbox" id="edit-toggle" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                 <span>Unlock Edit</span>
@@ -312,6 +318,7 @@
         const extraTypeSelect = document.getElementById('extra-type');
         const mainTable = document.getElementById('main-table');
         const editToggle = document.getElementById('edit-toggle');
+        const fixBaseToggle = document.getElementById('fix-base-toggle');
         let saveTimeout;
 
         function updateTitle() {
@@ -319,6 +326,14 @@
             if (titleEl) {
                 titleEl.innerText = `Salary Statement of ${monthInput.value} - ${yearInput.innerText}`;
             }
+        }
+
+        // Helper function: Get base salary for calculations (either typed or DB default)
+        function getBaseSalaryForCalc(tr) {
+            const enteredSalary = parseFloat(tr.querySelector('.salary-input').value) || 0;
+            const defaultSalary = parseFloat(tr.getAttribute('data-default-salary')) || 0;
+            const isFixed = fixBaseToggle.checked;
+            return isFixed ? defaultSalary : enteredSalary;
         }
 
         // Initialize Table
@@ -330,6 +345,8 @@
             employees.forEach(emp => {
                 const tr = document.createElement('tr');
                 tr.setAttribute('data-id', emp.id);
+                // মূল বেতন ডাটাবেস থেকে ট্যাগে সংরক্ষণ করা হলো 
+                tr.setAttribute('data-default-salary', emp.defaultSalary); 
                 tr.innerHTML = `
                     <td class="text-center">${emp.id}</td>
                     <td class="name-col">${emp.name}</td>
@@ -355,7 +372,7 @@
             const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
             
             document.querySelectorAll('tr[data-id]').forEach(tr => {
-                const salaryAmount = parseFloat(tr.querySelector('.salary-input').value) || 0;
+                const baseCalcSalary = getBaseSalaryForCalc(tr);
                 const extraInput = tr.querySelector('.extra-input');
                 const absentInput = tr.querySelector('.absent-input');
                 
@@ -368,14 +385,14 @@
                 
                 if (extraTypeSelect.value === 'deduction') {
                     const absentDays = parseFloat(absentInput.value) || 0;
-                    if (absentDays > 0 && salaryAmount > 0) {
-                        extraInput.value = Math.round((salaryAmount / daysInMonth) * absentDays);
+                    if (absentDays > 0 && baseCalcSalary > 0) {
+                        extraInput.value = Math.round((baseCalcSalary / daysInMonth) * absentDays);
                     } else {
                         extraInput.value = ''; 
                     }
                 } else if (extraTypeSelect.value === 'bonus') {
-                    if (salaryAmount > 0) {
-                        extraInput.value = Math.round(salaryAmount / 2); 
+                    if (baseCalcSalary > 0) {
+                        extraInput.value = Math.round(baseCalcSalary / 2); 
                     } else {
                         extraInput.value = '';
                     }
@@ -391,7 +408,7 @@
             document.querySelectorAll('input[type="number"]').forEach(input => {
                 input.addEventListener('input', (e) => {
                     const tr = input.closest('tr');
-                    const salaryAmount = parseFloat(tr.querySelector('.salary-input').value) || 0;
+                    const baseCalcSalary = getBaseSalaryForCalc(tr);
                     const extraInput = tr.querySelector('.extra-input');
                     const absentInput = tr.querySelector('.absent-input');
 
@@ -406,8 +423,8 @@
                     }
 
                     if (input.classList.contains('salary-input') && extraTypeSelect.value === 'bonus') {
-                        if (salaryAmount > 0) {
-                            extraInput.value = Math.round(salaryAmount / 2);
+                        if (baseCalcSalary > 0) {
+                            extraInput.value = Math.round(baseCalcSalary / 2);
                         } else {
                             extraInput.value = ''; 
                         }
@@ -423,8 +440,8 @@
                             absentDays = 0;
                         }
 
-                        if (absentDays > 0 && salaryAmount > 0) {
-                            extraInput.value = Math.round((salaryAmount / daysInMonth) * absentDays);
+                        if (absentDays > 0 && baseCalcSalary > 0) {
+                            extraInput.value = Math.round((baseCalcSalary / daysInMonth) * absentDays);
                         } else if (input.classList.contains('absent-input') && absentDays === 0) {
                             extraInput.value = ''; 
                         }
@@ -444,29 +461,35 @@
                 mainTable.classList.add('show-absent');
                 recalcAll(); 
             });
+
+            fixBaseToggle.addEventListener('change', (e) => {
+                localStorage.setItem('madrasa_fix_base_mode', e.target.checked);
+                recalcAll(); 
+            });
         }
 
         function calculateRow(tr) {
-            const salary = parseFloat(tr.querySelector('.salary-input').value) || 0;
+            const enteredSalary = parseFloat(tr.querySelector('.salary-input').value) || 0;
+            const baseCalcSalary = getBaseSalaryForCalc(tr);
             const extra = parseFloat(tr.querySelector('.extra-input').value) || 0;
             const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
             const isBonus = extraTypeSelect.value === 'bonus';
             
-            // কর্তনের হিসাব (উভয় ক্ষেত্রেই)
+            // কর্তনের হিসাব (উভয় ক্ষেত্রেই - ফিক্স অন থাকলে ডাটাবেস বেতন থেকে কাটবে)
             let deduction = 0;
-            if (absentDays > 0 && salary > 0) {
+            if (absentDays > 0 && baseCalcSalary > 0) {
                 const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
-                deduction = Math.round((salary / daysInMonth) * absentDays);
+                deduction = Math.round((baseCalcSalary / daysInMonth) * absentDays);
             }
 
             let total = 0;
-            if (salary > 0 || extra > 0) {
+            if (enteredSalary > 0 || extra > 0) {
                 if (isBonus) {
                     // বোনাস থাকলে: (বেতন - কর্তন) + বোনাস
-                    total = (salary - deduction) + extra;
+                    total = (enteredSalary - deduction) + extra;
                 } else {
                     // কর্তন মোডে extra টাই হচ্ছে মূল কর্তন
-                    total = salary - extra;
+                    total = enteredSalary - extra;
                 }
             }
             
@@ -612,6 +635,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Edit Toggle Logic
             editToggle.checked = allowManualEdit;
             editToggle.addEventListener('change', (e) => {
                 allowManualEdit = e.target.checked;
@@ -625,6 +649,10 @@
                     }
                 });
             });
+
+            // Fix Base Toggle Logic (সবসময় প্রযোজ্য)
+            let isFixBase = localStorage.getItem('madrasa_fix_base_mode') === 'true';
+            fixBaseToggle.checked = isFixBase;
 
             const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
             monthInput.value = currentMonthName;
