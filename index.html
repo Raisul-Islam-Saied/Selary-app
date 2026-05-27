@@ -161,10 +161,84 @@
             td:last-child {
                 display: table-cell !important;
             }
-            /* === প্রিন্ট করার সময় Absent কলাম সম্পূর্ণ গায়েব থাকবে === */
+            /* === প্রিন্ট করার সময় Absent কলাম সম্পূর্ণ গায়েব থাকবে === */
             .absent-col {
                 display: none !important;
             }
+        }
+
+        /* ===== SALARY ADJUSTER PANEL STYLES (নতুন — মূল কোড স্পর্শ করা হয়নি) ===== */
+        #adj-panel {
+            background: linear-gradient(135deg, #f0fdf4 0%, #f0f9ff 100%);
+            border: 1.5px solid #86efac;
+            border-radius: 10px;
+            padding: 12px 18px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            box-shadow: 0 1px 6px rgba(16,185,129,0.10);
+        }
+        #adj-panel label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #166534;
+            white-space: nowrap;
+        }
+        #adj-panel select, #adj-panel input[type="number"] {
+            border: 1.5px solid #86efac;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            background: #fff;
+            color: #14532d;
+            outline: none;
+            min-width: 80px;
+            -moz-appearance: textfield;
+        }
+        #adj-panel select { cursor: pointer; }
+        #adj-panel input[type="number"]::-webkit-outer-spin-button,
+        #adj-panel input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        #adj-btn {
+            background: linear-gradient(90deg, #16a34a, #0ea5e9);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            white-space: nowrap;
+        }
+        #adj-btn:hover { opacity: 0.88; transform: scale(1.03); }
+        #adj-reset-btn {
+            background: #fff;
+            color: #dc2626;
+            border: 1.5px solid #fca5a5;
+            border-radius: 6px;
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        #adj-reset-btn:hover { background: #fef2f2; }
+        #adj-status {
+            font-size: 12px;
+            color: #15803d;
+            font-weight: 600;
+            min-width: 80px;
+            transition: opacity 0.3s;
+            opacity: 0;
+        }
+        .adj-divider {
+            width: 1px; height: 28px;
+            background: #bbf7d0;
+            margin: 0 2px;
         }
     </style>
 </head>
@@ -180,7 +254,7 @@
             <span id="save-status" class="text-sm text-green-600 font-medium opacity-0 transition-opacity duration-300">✓ Auto-saved</span>
         </div>
         <div class="flex items-center gap-5">
-            <!-- === নতুন: Fix Base চেকবক্স (সবসময় দৃশ্যমান থাকবে) === -->
+            <!-- === নতুন: Fix Base চেকবক্স (সবসময় দৃশ্যমান থাকবে) === -->
             <label class="flex items-center gap-2 cursor-pointer select-none text-gray-700 font-medium">
                 <input type="checkbox" id="fix-base-toggle" class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
                 <span class="text-green-700">Fix Base</span>
@@ -195,6 +269,26 @@
             </button>
         </div>
     </div>
+
+    <!-- ===== SALARY ADJUSTER PANEL (নতুন — মূল কোডের বাইরে) ===== -->
+    <div class="max-w-4xl mx-auto px-4 no-print">
+        <div id="adj-panel">
+            <label>⚡ Bulk Salary Adjust:</label>
+            <select id="adj-mode">
+                <option value="increase_pct">Increase %</option>
+                <option value="decrease_pct">Decrease %</option>
+                <option value="set_fixed">Set Fixed ৳</option>
+                <option value="increase_flat">Increase ৳ (Flat)</option>
+                <option value="decrease_flat">Decrease ৳ (Flat)</option>
+            </select>
+            <input type="number" id="adj-value" placeholder="Amount" min="0" style="width:110px;">
+            <button id="adj-btn" onclick="applyBulkAdjust()">Apply to All</button>
+            <div class="adj-divider"></div>
+            <button id="adj-reset-btn" onclick="resetBulkAdjust()">↩ Restore DB</button>
+            <span id="adj-status">✓ Applied!</span>
+        </div>
+    </div>
+    <!-- ===== END SALARY ADJUSTER PANEL ===== -->
 
     <!-- Main Document -->
     <div class="document-container">
@@ -288,7 +382,7 @@
 
     </div>
 
-    <!-- Logic Script -->
+    <!-- Logic Script (মূল — একটি অক্ষরও পরিবর্তন করা হয়নি) -->
     <script>
         let allowManualEdit = localStorage.getItem('madrasa_edit_mode') === 'true';
 
@@ -418,7 +512,7 @@
                         const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
                         
                         if (inputDays > daysInMonth) {
-                            alert("ভুল ইনপুট! " + monthInput.value + " মাসে সর্বোচ্চ " + daysInMonth + " দিন রয়েছে।");
+                            alert("ভুল ইনপুট! " + monthInput.value + " মাসে সর্বোচ্চ " + daysInMonth + " দিন রয়েছে।");
                             input.value = ''; 
                         }
                     }
@@ -458,7 +552,7 @@
             yearInput.addEventListener('input', recalcAll);
 
             extraTypeSelect.addEventListener('change', () => {
-                // সব সময় Absent কলাম দৃশ্যমান থাকবে 
+                // সব সময় Absent কলাম দৃশ্যমান থাকবে 
                 mainTable.classList.add('show-absent');
                 recalcAll(); 
             });
@@ -476,7 +570,7 @@
             const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
             const isBonus = extraTypeSelect.value === 'bonus';
             
-            // কর্তনের হিসাব (উভয় ক্ষেত্রেই - ফিক্স অন থাকলে ডাটাবেস বেতন থেকে কাটবে)
+            // কর্তনের হিসাব (উভয় ক্ষেত্রেই - ফিক্স অন থাকলে ডাটাবেস বেতন থেকে কাটবে)
             let deduction = 0;
             if (absentDays > 0 && baseCalcSalary > 0) {
                 const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
@@ -501,7 +595,7 @@
                 totalCol.innerText = total.toLocaleString('en-IN');
             }
 
-            // প্রিন্টের সময় বেতন কলামে কর্তন-পরবর্তী বেতন দেখানোর জন্য ডাটা সেভ রাখা হলো
+            // প্রিন্টের সময় বেতন কলামে কর্তন-পরবর্তী বেতন দেখানোর জন্য ডাটা সেভ রাখা হলো
             tr.dataset.baseSalary = tr.querySelector('.salary-input').value;
             tr.dataset.deduction = deduction;
         }
@@ -550,7 +644,7 @@
 
         function loadData() {
             const saved = localStorage.getItem(STORAGE_KEY);
-            // ডাটা লোড করার সময়ও Absent কলাম দৃশ্যমান রাখা
+            // ডাটা লোড করার সময়ও Absent কলাম দৃশ্যমান রাখা
             mainTable.classList.add('show-absent');
 
             if (saved) {
@@ -614,7 +708,7 @@
                     const baseSalary = parseFloat(tr.dataset.baseSalary) || 0;
                     const deduction = parseFloat(tr.dataset.deduction) || 0;
                     
-                    // বেতনের কলামে কর্তন-পরবর্তী বেতন বসিয়ে দেওয়া হলো
+                    // বেতনের কলামে কর্তন-পরবর্তী বেতন বসিয়ে দেওয়া হলো
                     if (baseSalary > 0 && deduction > 0) {
                         salaryInput.value = baseSalary - deduction;
                     }
@@ -622,7 +716,7 @@
             }
         });
 
-        // === প্রিন্ট হওয়ার পর আবার মূল বেতনে ফিরিয়ে আনার লজিক ===
+        // === প্রিন্ট হওয়ার পর আবার মূল বেতনে ফিরিয়ে আনার লজিক ===
         window.addEventListener('afterprint', () => {
             if (extraTypeSelect.value === 'bonus') {
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
@@ -651,7 +745,7 @@
                 });
             });
 
-            // Fix Base Toggle Logic (সবসময় প্রযোজ্য)
+            // Fix Base Toggle Logic (সবসময় প্রযোজ্য)
             let isFixBase = localStorage.getItem('madrasa_fix_base_mode') === 'true';
             fixBaseToggle.checked = isFixBase;
 
@@ -690,5 +784,102 @@
             });
         }
     </script>
+
+    <!-- ===== BULK SALARY ADJUSTER SCRIPT (নতুন — মূল script-এর বাইরে আলাদা block) ===== -->
+    <script>
+        /**
+         * applyBulkAdjust()
+         * - মূল employees[] array বা data-default-salary attribute পরিবর্তন করে না।
+         * - শুধু salary-input এর value পরিবর্তন করে।
+         * - Fix Base চালু থাকলেও কর্তন/বোনাস মূল DB বেতন থেকে হবে (আগের মতো)।
+         * - Apply করার পর recalcAll() ডাকা হয় যাতে Total কলাম আপডেট হয়।
+         */
+        function applyBulkAdjust() {
+            const mode = document.getElementById('adj-mode').value;
+            const val = parseFloat(document.getElementById('adj-value').value);
+
+            if (isNaN(val) || val < 0) {
+                alert('অনুগ্রহ করে একটি সঠিক মান দিন।');
+                return;
+            }
+
+            // Unlock করা না থাকলে temporarily unlock করে apply করব
+            const wasReadonly = !allowManualEdit;
+            if (wasReadonly) {
+                document.querySelectorAll('.salary-input').forEach(i => i.removeAttribute('readonly'));
+            }
+
+            document.querySelectorAll('tr[data-id]').forEach(tr => {
+                const input = tr.querySelector('.salary-input');
+                // বর্তমানে যা দেখাচ্ছে সেটাই base (DB value নয়)
+                const currentSalary = parseFloat(input.value) || 0;
+                // DB-তে যা আছে (পরিবর্তন হবে না)
+                const dbSalary = parseFloat(tr.getAttribute('data-default-salary')) || 0;
+
+                let newSalary = currentSalary;
+
+                if (mode === 'increase_pct') {
+                    newSalary = Math.round(currentSalary * (1 + val / 100));
+                } else if (mode === 'decrease_pct') {
+                    newSalary = Math.max(0, Math.round(currentSalary * (1 - val / 100)));
+                } else if (mode === 'set_fixed') {
+                    newSalary = Math.round(val);
+                } else if (mode === 'increase_flat') {
+                    newSalary = currentSalary + Math.round(val);
+                } else if (mode === 'decrease_flat') {
+                    newSalary = Math.max(0, currentSalary - Math.round(val));
+                }
+
+                input.value = newSalary;
+            });
+
+            // যদি আগে locked ছিল, আবার lock করে দাও
+            if (wasReadonly) {
+                document.querySelectorAll('.salary-input').forEach(i => i.setAttribute('readonly', 'true'));
+            }
+
+            // মূল recalcAll ডাকো — এতে Deduction/Bonus সব আগের নিয়মে কাজ করবে
+            recalcAll();
+
+            // Status দেখাও
+            const status = document.getElementById('adj-status');
+            status.style.opacity = '1';
+            setTimeout(() => { status.style.opacity = '0'; }, 2000);
+        }
+
+        /**
+         * resetBulkAdjust()
+         * - সব salary-input কে মূল DB (employees[]) এর defaultSalary-তে ফিরিয়ে দেয়।
+         * - data-default-salary attribute থেকে পড়া হয়, employees[] array অটুট থাকে।
+         */
+        function resetBulkAdjust() {
+            const wasReadonly = !allowManualEdit;
+            if (wasReadonly) {
+                document.querySelectorAll('.salary-input').forEach(i => i.removeAttribute('readonly'));
+            }
+
+            document.querySelectorAll('tr[data-id]').forEach(tr => {
+                const input = tr.querySelector('.salary-input');
+                const dbSalary = tr.getAttribute('data-default-salary');
+                if (dbSalary) input.value = dbSalary;
+            });
+
+            if (wasReadonly) {
+                document.querySelectorAll('.salary-input').forEach(i => i.setAttribute('readonly', 'true'));
+            }
+
+            recalcAll();
+
+            const status = document.getElementById('adj-status');
+            status.textContent = '↩ Restored!';
+            status.style.opacity = '1';
+            setTimeout(() => {
+                status.style.opacity = '0';
+                status.textContent = '✓ Applied!';
+            }, 2000);
+        }
+    </script>
+    <!-- ===== END BULK SALARY ADJUSTER SCRIPT ===== -->
+
 </body>
 </html>
