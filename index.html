@@ -251,6 +251,10 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                 Print Sheet
             </button>
+            <button onclick="generateAndDownloadCSV()" class="bg-emerald-600 text-white px-6 py-2.5 rounded shadow hover:bg-emerald-700 font-semibold flex items-center gap-2 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                SMS (CSV)
+            </button>
             <span id="save-status" class="text-sm text-green-600 font-medium opacity-0 transition-opacity duration-300">✓ Auto-saved</span>
         </div>
         <div class="flex items-center gap-5">
@@ -878,6 +882,89 @@
                 status.textContent = '✓ Applied!';
             }, 2000);
         }
+            /**
+     * ডাইনামিক SMS জেনারেটর এবং CSV এক্সপোর্ট 
+     * এটি প্রতিটি কর্মীর ডেটা চেক করে এআই-এর মতো মেসেজ তৈরি করবে।
+     */
+    function generateAndDownloadCSV() {
+        // CSV ফাইলের হেডার (কলামের নাম)
+        let csvContent = "Phone,Message\n";
+        
+        const monthYear = `${monthInput.value} ${yearInput.innerText}`;
+        const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
+        const type = extraTypeSelect.value; // 'bonus' নাকি 'deduction' মোডে আছে
+
+        document.querySelectorAll('tr[data-id]').forEach(tr => {
+            const id = parseInt(tr.getAttribute('data-id'));
+            const emp = employees.find(e => e.id === id);
+            
+            // ফোন নম্বর না থাকলে বা কর্মী খুঁজে না পেলে স্কিপ করবে
+            if (!emp || !emp.phone) return;
+
+            // ভ্যালুগুলো সংগ্রহ করা
+            const gross = parseFloat(tr.querySelector('.salary-input').value) || 0;
+            const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
+            const extra = parseFloat(tr.querySelector('.extra-input').value) || 0;
+            const netPayable = tr.querySelector('.total-col').innerText.trim() || "0";
+            const baseCalcSalary = getBaseSalaryForCalc(tr);
+
+            // অনুপস্থিতির কর্তন হিসাব করা
+            let absentDeduction = 0;
+            if (absentDays > 0 && baseCalcSalary > 0) {
+                absentDeduction = Math.round((baseCalcSalary / daysInMonth) * absentDays);
+            }
+
+            // মেসেজের প্রথম অংশ (সবার জন্য কমন)
+            let msg = `Assalamu Alaikum,\nYour salary for ${monthYear} has been processed. Here is the detailed breakdown:\n\n- Gross Salary: ${gross} BDT\n`;
+
+            // কন্ডিশন ১: যদি বোনাস মোড থাকে এবং বোনাসের ঘরে টাকা থাকে
+            if (type === 'bonus' && extra > 0) {
+                msg += `- Bonus: +${extra} BDT\n`;
+            }
+
+            // কন্ডিশন ২: যদি অনুপস্থিত থাকে
+            if (absentDays > 0) {
+                msg += `- Absence Deduction (${absentDays} Days): -${absentDeduction} BDT\n`;
+            }
+
+            // কন্ডিশন ৩: যদি ডিডাকশন মোড থাকে এবং অনুপস্থিতির বাইরেও মাদরাসা অতিরিক্ত কিছু কাটে
+            if (type === 'deduction') {
+                // extra ঘরে যে টাকাটা আছে, তা থেকে অনুপস্থিতির টাকা বাদ দিলে মাদরাসার কর্তন বের হবে
+                let madrasahHold = extra - absentDeduction;
+                if (madrasahHold > 0) {
+                    msg += `- Madrasah Deduction/Hold: -${madrasahHold} BDT\n`;
+                } else if (madrasahHold < 0) {
+                    // যদি কোনো কারণে কর্তনের চেয়েও বেশি টাকা অ্যাডজাস্ট করা হয়
+                    msg += `- Adjustment: +${Math.abs(madrasahHold)} BDT\n`;
+                }
+            }
+
+            // মেসেজের শেষের অংশ (সর্বমোট প্রাপ্য এবং সাইন করার অনুরোধ)
+            msg += `-----------------------------------\nNet Payable Now: ${netPayable} BDT\n-----------------------------------\n\nPlease visit the office to sign the payroll register and collect your payment.\n- Raisul Islam Saied, Abdur Razzak Dakhil Madrasah`;
+
+            // CSV এর জন্য মেসেজটিকে ঠিকভাবে ফরম্যাট করা (যাতে লাইনের ব্রেকগুলো নষ্ট না হয়)
+            // এক্সেলে যাতে কমা (,) বা লাইন ব্রেক সমস্যা না করে সেজন্য মেসেজটি ডাবল কোটেশনে "" মুড়ে দেওয়া হলো
+            let formattedMsg = `"${msg.replace(/"/g, '""')}"`;
+            let formattedPhone = `"${emp.phone}"`;
+
+            // কলাম যুক্ত করা
+            csvContent += `${formattedPhone},${formattedMsg}\n`;
+        });
+
+        // CSV ফাইল তৈরি ও ডাউনলোড করার কমান্ড
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' }); // \uFEFF ensures Excel reads UTF-8 correctly
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Salary_SMS_${monthInput.value}_${yearInput.innerText}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     </script>
     <!-- ===== END BULK SALARY ADJUSTER SCRIPT ===== -->
 
