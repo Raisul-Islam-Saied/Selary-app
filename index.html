@@ -880,7 +880,7 @@
             }, 2000);
         }
 
-        /**
+    /**
      * ডাইনামিক SMS জেনারেটর এবং CSV এক্সপোর্ট 
      */
     function generateAndDownloadCSV() {
@@ -910,38 +910,44 @@
                 absentDeduction = Math.round((baseCalcSalary / daysInMonth) * absentDays);
             }
 
-            // আপনার দেওয়া হুবহু ফরম্যাট অনুযায়ী মেসেজ জেনারেট
-            let msg = `Dear ${emp.name}, Your salary for ${monthYear} has been processed.\n\n`;
-            
-            msg += `- Basic Salary: ${dbSalary} BDT\n`;
+            let msg = "";
 
-            if (salaryDiff > 0) {
-                msg += `- Salary Increment: +${salaryDiff} BDT\n`;
-            } else if (salaryDiff < 0) {
-                msg += `- Salary Adjustment (Decrease): ${salaryDiff} BDT\n`;
-            }
+            // কন্ডিশন: যদি কোনো ইনক্রিমেন্ট/ডিক্রিমেন্ট, বোনাস বা কর্তন না থাকে
+            if (salaryDiff === 0 && extra === 0 && absentDays === 0) {
+                msg = `Dear ${emp.name}, your salary for ${monthYear} has been processed and the net payable amount is ${netPayable} BDT; Please collect it from the office. -ARDM`;
+            } else {
+                // বিস্তারিত মেসেজ (যদি কোনো পরিবর্তন থাকে)
+                msg = `Dear ${emp.name}, Your salary for ${monthYear} has been processed.\n\n`;
+                
+                msg += `- Basic Salary: ${dbSalary} BDT\n`;
 
-            if (type === 'bonus' && extra > 0) {
-                msg += `- Bonus: +${extra} BDT\n`;
-            }
-
-            if (absentDays > 0) {
-                msg += `- Absence Deduction (${absentDays} Days): -${absentDeduction} BDT\n`;
-            }
-
-            if (type === 'deduction') {
-                let madrasahHold = extra - absentDeduction;
-                if (madrasahHold > 0) {
-                    msg += `- Madrasah Deduction/Hold: -${madrasahHold} BDT\n`;
-                } else if (madrasahHold < 0) {
-                    msg += `- Other Adjustment: +${Math.abs(madrasahHold)} BDT\n`;
+                if (salaryDiff > 0) {
+                    msg += `- Salary Increment: +${salaryDiff} BDT\n`;
+                } else if (salaryDiff < 0) {
+                    msg += `- Salary Adjustment (Decrease): ${salaryDiff} BDT\n`;
                 }
-            }
 
-            // মেসেজের শেষ অংশ (আপনার দেওয়া হুবহু টেক্সট)
-            msg += `\nNet Payable Now: ${netPayable} BDT\n\n`;
-            msg += `Please visit the office to collect your payment.\n\n`;
-            msg += `- Abdur Razzaq Dakhil Madrasah`;
+                if (type === 'bonus' && extra > 0) {
+                    msg += `- Bonus: +${extra} BDT\n`;
+                }
+
+                if (absentDays > 0) {
+                    msg += `- Absence Deduction (${absentDays} Days): -${absentDeduction} BDT\n`;
+                }
+
+                if (type === 'deduction') {
+                    let madrasahHold = extra - absentDeduction;
+                    if (madrasahHold > 0) {
+                        msg += `- Madrasah Deduction/Hold: -${madrasahHold} BDT\n`;
+                    } else if (madrasahHold < 0) {
+                        msg += `- Other Adjustment: +${Math.abs(madrasahHold)} BDT\n`;
+                    }
+                }
+
+                msg += `\nNet Payable Now: ${netPayable} BDT\n\n`;
+                msg += `Please visit the office to collect your payment.\n\n`;
+                msg += `- Abdur Razzaq Dakhil Madrasah`;
+            }
 
             let formattedMsg = `"${msg.replace(/"/g, '""')}"`;
             let formattedPhone = `"${emp.phone}"`;
@@ -960,7 +966,8 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-                                                                                          }
+    }
+                                                                                      }
         </script>
 </body>
 </html>
