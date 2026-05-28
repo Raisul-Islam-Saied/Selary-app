@@ -937,8 +937,8 @@
                 status.textContent = '✓ Applied!';
             }, 2000);
         }
-        // ==========================================
-    // AI SMS MASTER CONTROLLER & MODAL LOGIC
+            // ==========================================
+    // AI SMS MASTER CONTROLLER & MODAL LOGIC (UPDATED UI & API)
     // ==========================================
 
     const SMS_API_KEY = "MH9rEHMsOE7AQogZWrL2";
@@ -946,7 +946,7 @@
     const SMS_BULK_PASS = "saied783";
     const SMS_RATE = 0.35; 
 
-    // ১. মাস্টার মেসেজ জেনারেটর (CSV এবং API উভয়ের জন্য)
+    // ১. মাস্টার মেসেজ জেনারেটর
     function generateMessageForEmployee(id) {
         const tr = document.querySelector(`tr[data-id="${id}"]`);
         const emp = employees.find(e => e.id === id);
@@ -1012,61 +1012,113 @@
         setTimeout(() => smsModal.classList.add('hidden'), 300);
     }
 
-    // ৩. ডাইনামিক ওয়ার্কস্পেস (UI)
+    // ৩. ডাইনামিক ওয়ার্কস্পেস (UI - আপনার পছন্দ অনুযায়ী লিস্ট স্টাইল)
     function showSection(type) {
         modalWorkspace.classList.remove('hidden');
+        
         if (type === 'single') {
-            let options = employees.map(e => `<option value="${e.id}">${e.name} (${e.desig})</option>`).join('');
+            let listHTML = employees.map(emp => {
+                return `
+                <div class="flex justify-between items-center p-3 mb-2 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition">
+                    <div>
+                        <p class="font-bold text-gray-800 text-sm">${emp.name}</p>
+                        <p class="text-xs text-gray-500">${emp.phone || 'No Number'}</p>
+                    </div>
+                    <button id="single-btn-${emp.id}" onclick="previewAndSendSingle(${emp.id})" class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded text-xs font-bold hover:bg-blue-600 hover:text-white transition whitespace-nowrap">
+                        Preview & Send
+                    </button>
+                </div>`;
+            }).join('');
+
             modalWorkspace.innerHTML = `
-                <h4 class="text-lg font-bold text-gray-800 mb-3">Send Single AI Message</h4>
-                <select id="single-emp-select" onchange="previewSingleSms()" class="w-full p-3 border border-gray-300 rounded-lg outline-none mb-4 font-medium">
-                    <option value="">-- Select Employee --</option>
-                    ${options}
-                </select>
-                <div id="single-preview-box" class="hidden">
-                    <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm whitespace-pre-wrap leading-relaxed shadow-inner mb-4"></div>
-                    <button id="single-send-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">Send Now</button>
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="text-lg font-bold text-gray-800">Select Employee</h4>
+                    <button onclick="modalWorkspace.classList.add('hidden')" class="text-xs text-red-500 hover:underline">Close List</button>
+                </div>
+                <div id="single-preview-box" class="hidden bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm whitespace-pre-wrap leading-relaxed shadow-inner mb-4 relative">
+                    <button onclick="document.getElementById('single-preview-box').classList.add('hidden')" class="absolute top-2 right-2 text-gray-400 hover:text-white">✖</button>
+                    <div id="single-preview-text"></div>
+                    <button id="single-confirm-btn" class="w-full mt-3 bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition">Confirm & Send API</button>
+                </div>
+                <div class="max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                    ${listHTML}
                 </div>
             `;
-        } else if (type === 'bulk') {
+        } 
+        else if (type === 'bulk') {
+            let previewsHTML = employees.map(emp => {
+                let msg = generateMessageForEmployee(emp.id);
+                if(!msg || !emp.phone) return '';
+                return `
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-3">
+                    <p class="font-bold text-sm text-gray-800 border-b pb-1 mb-2 flex justify-between">
+                        <span>${emp.name}</span>
+                        <span class="text-indigo-600">${emp.phone}</span>
+                    </p>
+                    <p class="font-mono text-xs text-gray-600 whitespace-pre-wrap">${msg}</p>
+                </div>`;
+            }).join('');
+
             modalWorkspace.innerHTML = `
-                <div class="text-center py-4">
-                    <h4 class="text-xl font-bold text-gray-800 mb-2">Ready to Broadcast?</h4>
-                    <p class="text-gray-500 mb-6">Automated AI messages will be generated and sent.</p>
-                    <input type="password" id="modal-bulk-pass" placeholder="Admin Password" class="p-3 border border-gray-300 rounded-lg text-center tracking-widest font-mono mb-6 outline-none">
-                    <br>
-                    <button onclick="executeModalBulk()" class="bg-violet-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-violet-700 shadow-lg inline-flex gap-2">Execute Bulk SMS</button>
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="text-lg font-bold text-gray-800">Bulk SMS Preview</h4>
+                    <span class="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded">Double Check Messages</span>
+                </div>
+                <div class="max-h-60 overflow-y-auto pr-2 custom-scrollbar mb-4 border border-gray-200 rounded-lg p-2 bg-white">
+                    ${previewsHTML || '<p class="text-center text-red-500 py-4">No valid data found to send.</p>'}
+                </div>
+                <div class="bg-violet-50 p-4 rounded-lg border border-violet-100 flex flex-col sm:flex-row items-center gap-3">
+                    <input type="password" id="modal-bulk-pass" placeholder="Admin Password" class="flex-1 p-2.5 border border-gray-300 rounded focus:ring-2 focus:ring-violet-500 outline-none text-center tracking-widest font-mono">
+                    <button onclick="executeModalBulk()" class="w-full sm:w-auto bg-violet-600 text-white font-bold py-2.5 px-6 rounded hover:bg-violet-700 shadow-md transition whitespace-nowrap">Execute Bulk</button>
                 </div>
             `;
         }
     }
 
-    // ৪. লাইভ প্রিভিউ এবং অ্যাকশন
-    function previewSingleSms() {
-        const id = parseInt(document.getElementById('single-emp-select').value);
+    // ৪. লাইভ প্রিভিউ এবং সিঙ্গল সেন্ড
+    function previewAndSendSingle(id) {
         const previewBox = document.getElementById('single-preview-box');
-        if (!id) return previewBox.classList.add('hidden');
-        
+        const previewText = document.getElementById('single-preview-text');
+        const confirmBtn = document.getElementById('single-confirm-btn');
         const msg = generateMessageForEmployee(id);
         const emp = employees.find(e => e.id === id);
+
+        previewText.innerText = msg;
         previewBox.classList.remove('hidden');
-        previewBox.querySelector('div').innerText = msg;
         
-        const sendBtn = document.getElementById('single-send-btn');
-        sendBtn.onclick = async () => {
-            sendBtn.innerHTML = `Sending...`;
+        // প্রিভিউ বক্সটি স্ক্রল করে সামনে নিয়ে আসা
+        previewBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        confirmBtn.onclick = async () => {
+            const btnState = document.getElementById(`single-btn-${id}`);
+            confirmBtn.innerHTML = `Sending...`;
+            btnState.innerHTML = `Sending...`;
+            
             let success = await callSmsApi(emp.phone, msg);
-            sendBtn.innerHTML = success ? `✅ Sent Successfully` : `❌ Failed`;
-            sendBtn.className = success ? "w-full bg-green-600 text-white font-bold py-3 rounded-lg" : "w-full bg-red-600 text-white font-bold py-3 rounded-lg";
-            setTimeout(() => { sendBtn.innerHTML = `Send Now`; sendBtn.className = "w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition"; }, 3000);
+            
+            if(success) {
+                confirmBtn.innerHTML = `✅ Sent Successfully`;
+                confirmBtn.classList.replace('bg-blue-600', 'bg-green-600');
+                btnState.outerHTML = `<span class="text-xs font-bold text-green-600">✅ Sent</span>`;
+            } else {
+                confirmBtn.innerHTML = `❌ Failed (Check Netlify Proxy/Internet)`;
+                confirmBtn.classList.replace('bg-blue-600', 'bg-red-600');
+                btnState.innerHTML = `Failed`;
+                btnState.classList.add('text-red-600');
+            }
+            setTimeout(() => { 
+                confirmBtn.innerHTML = `Confirm & Send API`; 
+                confirmBtn.className = "w-full mt-3 bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition"; 
+                previewBox.classList.add('hidden');
+            }, 3000);
         };
     }
 
+    // ৫. বাল্ক এক্সেকিউশন
     async function executeModalBulk() {
         const pass = document.getElementById('modal-bulk-pass').value;
         if(pass !== SMS_BULK_PASS) return alert("Incorrect Admin Password!");
         
-        closeSmsModal();
         let messagesArray = [];
         employees.forEach(emp => {
             let phone = String(emp.phone || '').replace(/[^0-9]/g, '');
@@ -1078,22 +1130,26 @@
         });
 
         if(messagesArray.length === 0) return alert("No valid contacts found.");
-        let check = confirm(`Send to ${messagesArray.length} employees?`);
-        if(!check) return;
+        
+        document.getElementById('modal-workspace').innerHTML = `<div class="text-center py-10"><h3 class="text-xl font-bold animate-pulse text-violet-600">Sending SMS to ${messagesArray.length} people...</h3><p class="text-sm text-gray-500 mt-2">Please do not close this window.</p></div>`;
 
-        alert("Bulk Processing Started...");
         try {
             let res = await fetch("/proxy/smsapimany", {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ api_key: SMS_API_KEY, senderid: SMS_SENDER_ID, messages: messagesArray })
             });
             let txt = await res.text();
-            if(txt.includes("202")) alert(`✅ Success! Sent to ${messagesArray.length} people.`);
-            else alert("❌ Error: " + txt);
-        } catch(e) { alert("❌ Failed: " + e.message); }
+            if(txt.includes("202")) {
+                document.getElementById('modal-workspace').innerHTML = `<div class="text-center py-10 text-green-600"><h3 class="text-2xl font-bold">✅ Success!</h3><p>SMS sent to ${messagesArray.length} employees.</p></div>`;
+            } else {
+                document.getElementById('modal-workspace').innerHTML = `<div class="text-center py-10 text-red-600"><h3 class="text-xl font-bold">❌ Error Returned</h3><p>${txt}</p></div>`;
+            }
+        } catch(e) { 
+            document.getElementById('modal-workspace').innerHTML = `<div class="text-center py-10 text-red-600"><h3 class="text-xl font-bold">❌ Network/Proxy Failed</h3><p>Ensure you are running this on Netlify, not Localhost.</p><p class="text-xs text-gray-500 mt-2">${e.message}</p></div>`;
+        }
     }
 
-    // ৫. API Helper
+    // ৬. API Helper (Error Handling Update)
     async function callSmsApi(phone, msg) {
         let p = String(phone).replace(/[^0-9]/g, '');
         if (p.length === 11 && p.startsWith('0')) p = '88' + p;
@@ -1103,23 +1159,44 @@
                 body: JSON.stringify({ api_key: SMS_API_KEY, senderid: SMS_SENDER_ID, number: p, message: msg })
             });
             let txt = await res.text();
+            console.log("SMS API Response:", txt); // ব্রাউজার কনসোলে এরর চেক করার জন্য
             return txt.includes("202");
-        } catch(e) { return false; }
+        } catch(e) { 
+            console.error("Fetch API Failed:", e);
+            return false; 
+        }
     }
 
+    // ব্যালেন্স চেকার ফিক্স (Raw Text এবং JSON উভয় সাপোর্ট)
     async function checkApiBalanceBtn() {
         const btn = document.getElementById('modal-balance-btn');
         btn.innerHTML = `Checking...`;
         try {
             let res = await fetch(`/proxy/balance?api_key=${SMS_API_KEY}`);
-            let data = await res.json();
-            btn.innerHTML = `৳ ${parseFloat(data.balance).toFixed(2)}`;
+            let rawText = await res.text();
+            let finalBalance = "0.00";
+
+            try {
+                // যদি API JSON ফরমেটে ডেটা দেয়
+                let data = JSON.parse(rawText);
+                finalBalance = parseFloat(data.balance || data).toFixed(2);
+            } catch(e) {
+                // যদি API সরাসরি নাম্বার টেক্সট হিসেবে দেয়
+                finalBalance = parseFloat(rawText).toFixed(2);
+            }
+
+            if(isNaN(finalBalance)) finalBalance = "Error";
+
+            btn.innerHTML = `৳ ${finalBalance}`;
             btn.classList.replace('bg-indigo-600', 'bg-emerald-600');
             setTimeout(() => { btn.innerHTML = `Check Again`; btn.classList.replace('bg-emerald-600', 'bg-indigo-600'); }, 5000);
-        } catch(e) { btn.innerHTML = `Error`; }
+        } catch(e) { 
+            btn.innerHTML = `Fail (Proxy?)`; 
+            console.error("Balance Fetch Error:", e);
+        }
     }
 
-    // ৬. CSV এক্সপোর্ট (মডাল থেকে)
+    // ৭. CSV এক্সপোর্ট
     function triggerCsvExport() {
         closeSmsModal();
         let csvContent = "Phone,Message\n";
@@ -1135,7 +1212,7 @@
         link.download = `Salary_SMS_${monthInput.value}_${yearInput.innerText}.csv`;
         link.click();
     }
-                                                                                 
+                                                                 
         </script>
 </body>
 </html>
