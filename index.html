@@ -251,10 +251,11 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                 Print Sheet
             </button>
-            <button onclick="generateAndDownloadCSV()" class="bg-emerald-600 text-white px-6 py-2.5 rounded shadow hover:bg-emerald-700 font-semibold flex items-center gap-2 transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-                SMS (CSV)
+                        <button onclick="openSmsModal()" class="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-6 py-2.5 rounded shadow-lg hover:shadow-xl hover:scale-105 font-semibold flex items-center gap-2 transition-all duration-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                SMS
             </button>
+
             <span id="save-status" class="text-sm text-green-600 font-medium opacity-0 transition-opacity duration-300">✓ Auto-saved</span>
         </div>
         <div class="flex items-center gap-5">
@@ -384,31 +385,88 @@
             </div>
         </div>
 
+        </div> <div id="ai-sms-modal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
+            
+            <div class="bg-gradient-to-r from-violet-600 to-indigo-600 p-5 flex justify-between items-center text-white">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                        <svg class="w-6 h-6 text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        AI SMS Control Center
+                    </h2>
+                    <p class="text-indigo-100 text-sm mt-1">Smart, Dynamic & Automated Notification</p>
+                </div>
+                <button onclick="closeSmsModal()" class="text-white hover:bg-white/20 p-2 rounded-full transition outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="p-5 sm:p-6 overflow-y-auto flex-1 bg-slate-50">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">Total Staff</p>
+                        <p class="text-2xl font-black text-gray-800" id="modal-staff-count">0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">Net Payable</p>
+                        <p class="text-xl sm:text-2xl font-black text-gray-800" id="modal-total-amt">৳ 0</p>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-center col-span-2 sm:col-span-1 flex flex-col justify-center items-center">
+                        <p class="text-xs text-indigo-600 font-bold uppercase tracking-wider mb-2">API Balance</p>
+                        <button onclick="checkApiBalanceBtn()" id="modal-balance-btn" class="bg-indigo-600 text-white px-4 py-1.5 rounded-full text-sm font-bold hover:bg-indigo-700 transition shadow-md flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Check Now
+                        </button>
+                    </div>
+                </div>
+
+                <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider mb-3">⚡ Select Operation</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <button onclick="showSection('bulk')" class="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm border-2 border-transparent hover:border-violet-500 focus:border-violet-500 hover:shadow-md transition group">
+                        <div class="w-12 h-12 bg-violet-100 text-violet-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
+                        <span class="font-bold text-gray-800">Send Bulk SMS</span>
+                    </button>
+                    <button onclick="showSection('single')" class="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm border-2 border-transparent hover:border-blue-500 focus:border-blue-500 hover:shadow-md transition group">
+                        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div>
+                        <span class="font-bold text-gray-800">Single SMS</span>
+                    </button>
+                    <button onclick="triggerCsvExport()" class="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm border-2 border-transparent hover:border-emerald-500 hover:shadow-md transition group">
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div>
+                        <span class="font-bold text-gray-800">Export CSV</span>
+                    </button>
+                </div>
+
+                <div id="modal-workspace" class="hidden bg-white p-5 rounded-xl border border-gray-200 shadow-inner"></div>
+            </div>
+        </div>
     </div>
+
+    
+
 
     <!-- Logic Script (মূল — একটি অক্ষরও পরিবর্তন করা হয়নি) -->
     <script>
         let allowManualEdit = localStorage.getItem('madrasa_edit_mode') === 'true';
 
         // Employee Data
-        const employees = [
-    { id: 1, name: "Md Jabedul Islam", desig: "Superintendent", defaultSalary: 5000, phone: "8801837713062" },
-    { id: 2, name: "Md Rakibul Anwar", desig: "Assistant Head", defaultSalary: 4500, phone: "8801614319044" },
-    { id: 3, name: "Nandita Shil", desig: "Senior Teacher", defaultSalary: 4500, phone: "8801749860972" },
-    { id: 4, name: "Md Joynal Abedin", desig: "Senior Mudarris", defaultSalary: 4500, phone: "8801646505949" },
-    { id: 5, name: "Mahafoujul Hoque Ador", desig: "Senior Teacher", defaultSalary: 4000, phone: "8801881609751" },
-    { id: 6, name: "Muhammad Sohel", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801575427921" },
-    { id: 7, name: "Any Akter Nishu", desig: "Assistant Teacher", defaultSalary: 3500, phone: "8801617389043" },
-    { id: 8, name: "Nur Kamal Tamjid", desig: "Assistant Mudarris", defaultSalary: 3500, phone: "8801810598698" },
-    { id: 9, name: "Sadia Jahan", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801814138700" },
-    { id: 10, name: "Sabrina Sultana Priya", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801608927540" },
-    { id: 11, name: "Tausiful Hoque Mayen", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801797594046" },
-    { id: 12, name: "Raisul Islam Saied", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801610988489" },
-    { id: 13, name: "Fahmida Sikder Jhuma", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801831818588" },
-    { id: 14, name: "Urmi Karim Samu", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801823958817" },
-    { id: 15, name: "Md Mijan", desig: "Assistant Teacher", defaultSalary: 3000, phone: "8801814999592" },
-    { id: 16, name: "Arifa Akter", desig: "Assistant Teacher", defaultSalary: 2000, phone: "8801871152548" },
-    { id: 17, name: "Niamat Ali", desig: "Office Assistant", defaultSalary: 2600, phone: "8801870312623" }
+      const employees = [
+    { id: 1, name: "Md Jabedul Islam", desig: "Superintendent", defaultSalary: 5000, phone: "01572911065" },
+    { id: 2, name: "Md Rakibul Anwar", desig: "Assistant Head", defaultSalary: 4500, phone: "01610988489" },
+    { id: 3, name: "Nandita Shil", desig: "Senior Teacher", defaultSalary: 4500, phone: "01572911065" },
+    { id: 4, name: "Md Joynal Abedin", desig: "Senior Mudarris", defaultSalary: 4500, phone: "01610988489" },
+    { id: 5, name: "Mahafoujul Hoque Ador", desig: "Senior Teacher", defaultSalary: 4000, phone: "01572911065" },
+    { id: 6, name: "Muhammad Sohel", desig: "Assistant Teacher", defaultSalary: 3300, phone: "01610988489" },
+    { id: 7, name: "Any Akter Nishu", desig: "Assistant Teacher", defaultSalary: 3500, phone: "01572911065" },
+    { id: 8, name: "Nur Kamal Tamjid", desig: "Assistant Mudarris", defaultSalary: 3500, phone: "01610988489" },
+    { id: 9, name: "Sadia Jahan", desig: "Assistant Teacher", defaultSalary: 3300, phone: "01572911065" },
+    { id: 10, name: "Sabrina Sultana Priya", desig: "Assistant Teacher", defaultSalary: 3300, phone: "01610988489" },
+    { id: 11, name: "Tausiful Hoque Mayen", desig: "Assistant Teacher", defaultSalary: 3300, phone: "01572911065" },
+    { id: 12, name: "Raisul Islam Saied", desig: "Assistant Teacher", defaultSalary: 3300, phone: "01610988489" },
+    { id: 13, name: "Fahmida Sikder Jhuma", desig: "Assistant Teacher", defaultSalary: 3300, phone: "01572911065" },
+    { id: 14, name: "Urmi Karim Samu", desig: "Assistant Teacher", defaultSalary: 3300, phone: "01610988489" },
+    { id: 15, name: "Md Mijan", desig: "Assistant Teacher", defaultSalary: 3000, phone: "01572911065" },
+    { id: 16, name: "Arifa Akter", desig: "Assistant Teacher", defaultSalary: 2000, phone: "01610988489" },
+    { id: 17, name: "Niamat Ali", desig: "Office Assistant", defaultSalary: 2600, phone: "01572911065" }
 ];
 
         const tbody = document.getElementById('salary-body');
@@ -879,96 +937,205 @@
                 status.textContent = '✓ Applied!';
             }, 2000);
         }
-    /**
-     * ডাইনামিক SMS জেনারেটর এবং CSV এক্সপোর্ট 
-     */
-    function generateAndDownloadCSV() {
-        let csvContent = "Phone,Message\n";
-        
+        // ==========================================
+    // AI SMS MASTER CONTROLLER & MODAL LOGIC
+    // ==========================================
+
+    const SMS_API_KEY = "MH9rEHMsOE7AQogZWrL2";
+    const SMS_SENDER_ID = "8809617613401";
+    const SMS_BULK_PASS = "saied783";
+    const SMS_RATE = 0.35; 
+
+    // ১. মাস্টার মেসেজ জেনারেটর (CSV এবং API উভয়ের জন্য)
+    function generateMessageForEmployee(id) {
+        const tr = document.querySelector(`tr[data-id="${id}"]`);
+        const emp = employees.find(e => e.id === id);
+        if (!tr || !emp) return null;
+
         const monthYear = `${monthInput.value} ${yearInput.innerText}`;
         const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
         const type = extraTypeSelect.value; 
 
-        document.querySelectorAll('tr[data-id]').forEach(tr => {
-            const id = parseInt(tr.getAttribute('data-id'));
-            const emp = employees.find(e => e.id === id);
-            
-            if (!emp || !emp.phone) return;
+        const dbSalary = parseFloat(tr.getAttribute('data-default-salary')) || 0;
+        const currentSalary = parseFloat(tr.querySelector('.salary-input').value) || 0;
+        const salaryDiff = currentSalary - dbSalary;
 
-            const dbSalary = parseFloat(tr.getAttribute('data-default-salary')) || 0;
-            const currentSalary = parseFloat(tr.querySelector('.salary-input').value) || 0;
-            const salaryDiff = currentSalary - dbSalary;
+        const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
+        const extra = parseFloat(tr.querySelector('.extra-input').value) || 0;
+        const netPayable = tr.querySelector('.total-col').innerText.trim() || "0";
+        const baseCalcSalary = getBaseSalaryForCalc(tr);
 
-            const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
-            const extra = parseFloat(tr.querySelector('.extra-input').value) || 0;
-            const netPayable = tr.querySelector('.total-col').innerText.trim() || "0";
-            const baseCalcSalary = getBaseSalaryForCalc(tr);
+        let absentDeduction = 0;
+        if (absentDays > 0 && baseCalcSalary > 0) {
+            absentDeduction = Math.round((baseCalcSalary / daysInMonth) * absentDays);
+        }
 
-            let absentDeduction = 0;
-            if (absentDays > 0 && baseCalcSalary > 0) {
-                absentDeduction = Math.round((baseCalcSalary / daysInMonth) * absentDays);
+        let msg = "";
+        if (salaryDiff === 0 && extra === 0 && absentDays === 0) {
+            msg = `Dear ${emp.name}, your salary for ${monthYear} has been processed and the net payable amount is ${netPayable} BDT; Please collect it from the office. -ARDM`;
+        } else {
+            msg = `Dear ${emp.name}, Your salary for ${monthYear} has been processed.\n\n`;
+            msg += `- Basic Salary: ${dbSalary} BDT\n`;
+            if (salaryDiff > 0) msg += `- Salary Increment: +${salaryDiff} BDT\n`;
+            else if (salaryDiff < 0) msg += `- Salary Adjustment (Decrease): ${salaryDiff} BDT\n`;
+            if (type === 'bonus' && extra > 0) msg += `- Bonus: +${extra} BDT\n`;
+            if (absentDays > 0) msg += `- Absence Deduction (${absentDays} Days): -${absentDeduction} BDT\n`;
+            if (type === 'deduction') {
+                let madrasahHold = extra - absentDeduction;
+                if (madrasahHold > 0) msg += `- Madrasah Deduction/Hold: -${madrasahHold} BDT\n`;
+                else if (madrasahHold < 0) msg += `- Other Adjustment: +${Math.abs(madrasahHold)} BDT\n`;
             }
-
-            let msg = "";
-
-            // শর্ট মেসেজ কন্ডিশন: যদি কোনো পরিবর্তন না থাকে
-            if (salaryDiff === 0 && extra === 0 && absentDays === 0) {
-                msg = `Dear ${emp.name}, your salary for ${monthYear} has been processed and the net payable amount is ${netPayable} BDT; Please collect it from the office. -ARDM`;
-            } else {
-                // বিস্তারিত মেসেজ জেনারেট (যদি কোনো পরিবর্তন থাকে)
-                msg = `Dear ${emp.name}, Your salary for ${monthYear} has been processed.\n\n`;
-                
-                msg += `- Basic Salary: ${dbSalary} BDT\n`;
-
-                if (salaryDiff > 0) {
-                    msg += `- Salary Increment: +${salaryDiff} BDT\n`;
-                } else if (salaryDiff < 0) {
-                    msg += `- Salary Adjustment (Decrease): ${salaryDiff} BDT\n`;
-                }
-
-                if (type === 'bonus' && extra > 0) {
-                    msg += `- Bonus: +${extra} BDT\n`;
-                }
-
-                if (absentDays > 0) {
-                    msg += `- Absence Deduction (${absentDays} Days): -${absentDeduction} BDT\n`;
-                }
-
-                if (type === 'deduction') {
-                    let madrasahHold = extra - absentDeduction;
-                    if (madrasahHold > 0) {
-                        msg += `- Madrasah Deduction/Hold: -${madrasahHold} BDT\n`;
-                    } else if (madrasahHold < 0) {
-                        msg += `- Other Adjustment: +${Math.abs(madrasahHold)} BDT\n`;
-                    }
-                }
-
-                // মেসেজের শেষ অংশ
-                msg += `\nNet Payable Now: ${netPayable} BDT\n\n`;
-                msg += `Please visit the office to collect your payment.\n\n`;
-                msg += `- Abdur Razzaq Dakhil Madrasah`;
-            }
-
-            let formattedMsg = `"${msg.replace(/"/g, '""')}"`;
-            let formattedPhone = `"${emp.phone}"`;
-
-            csvContent += `${formattedPhone},${formattedMsg}\n`;
-        });
-
-        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' }); 
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Salary_SMS_${monthInput.value}_${yearInput.innerText}.csv`);
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+            msg += `\nNet Payable Now: ${netPayable} BDT\n\nPlease visit the office to collect your payment.\n\n- Abdur Razzaq Dakhil Madrasah`;
+        }
+        return msg;
     }
 
-                                                                                     
+    // ২. মডাল কন্ট্রোলার
+    const smsModal = document.getElementById('ai-sms-modal');
+    const modalWorkspace = document.getElementById('modal-workspace');
+
+    function openSmsModal() {
+        document.getElementById('modal-staff-count').innerText = employees.length;
+        document.getElementById('modal-total-amt').innerText = "৳ " + (document.getElementById('grand-total-text').innerText || "0");
+        smsModal.classList.remove('hidden');
+        setTimeout(() => {
+            smsModal.classList.remove('opacity-0');
+            smsModal.querySelector('div').classList.remove('scale-95');
+        }, 10);
+        modalWorkspace.innerHTML = '';
+        modalWorkspace.classList.add('hidden');
+    }
+
+    function closeSmsModal() {
+        smsModal.classList.add('opacity-0');
+        smsModal.querySelector('div').classList.add('scale-95');
+        setTimeout(() => smsModal.classList.add('hidden'), 300);
+    }
+
+    // ৩. ডাইনামিক ওয়ার্কস্পেস (UI)
+    function showSection(type) {
+        modalWorkspace.classList.remove('hidden');
+        if (type === 'single') {
+            let options = employees.map(e => `<option value="${e.id}">${e.name} (${e.desig})</option>`).join('');
+            modalWorkspace.innerHTML = `
+                <h4 class="text-lg font-bold text-gray-800 mb-3">Send Single AI Message</h4>
+                <select id="single-emp-select" onchange="previewSingleSms()" class="w-full p-3 border border-gray-300 rounded-lg outline-none mb-4 font-medium">
+                    <option value="">-- Select Employee --</option>
+                    ${options}
+                </select>
+                <div id="single-preview-box" class="hidden">
+                    <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm whitespace-pre-wrap leading-relaxed shadow-inner mb-4"></div>
+                    <button id="single-send-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">Send Now</button>
+                </div>
+            `;
+        } else if (type === 'bulk') {
+            modalWorkspace.innerHTML = `
+                <div class="text-center py-4">
+                    <h4 class="text-xl font-bold text-gray-800 mb-2">Ready to Broadcast?</h4>
+                    <p class="text-gray-500 mb-6">Automated AI messages will be generated and sent.</p>
+                    <input type="password" id="modal-bulk-pass" placeholder="Admin Password" class="p-3 border border-gray-300 rounded-lg text-center tracking-widest font-mono mb-6 outline-none">
+                    <br>
+                    <button onclick="executeModalBulk()" class="bg-violet-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-violet-700 shadow-lg inline-flex gap-2">Execute Bulk SMS</button>
+                </div>
+            `;
+        }
+    }
+
+    // ৪. লাইভ প্রিভিউ এবং অ্যাকশন
+    function previewSingleSms() {
+        const id = parseInt(document.getElementById('single-emp-select').value);
+        const previewBox = document.getElementById('single-preview-box');
+        if (!id) return previewBox.classList.add('hidden');
+        
+        const msg = generateMessageForEmployee(id);
+        const emp = employees.find(e => e.id === id);
+        previewBox.classList.remove('hidden');
+        previewBox.querySelector('div').innerText = msg;
+        
+        const sendBtn = document.getElementById('single-send-btn');
+        sendBtn.onclick = async () => {
+            sendBtn.innerHTML = `Sending...`;
+            let success = await callSmsApi(emp.phone, msg);
+            sendBtn.innerHTML = success ? `✅ Sent Successfully` : `❌ Failed`;
+            sendBtn.className = success ? "w-full bg-green-600 text-white font-bold py-3 rounded-lg" : "w-full bg-red-600 text-white font-bold py-3 rounded-lg";
+            setTimeout(() => { sendBtn.innerHTML = `Send Now`; sendBtn.className = "w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition"; }, 3000);
+        };
+    }
+
+    async function executeModalBulk() {
+        const pass = document.getElementById('modal-bulk-pass').value;
+        if(pass !== SMS_BULK_PASS) return alert("Incorrect Admin Password!");
+        
+        closeSmsModal();
+        let messagesArray = [];
+        employees.forEach(emp => {
+            let phone = String(emp.phone || '').replace(/[^0-9]/g, '');
+            if (phone.length === 11 && phone.startsWith('0')) phone = '88' + phone;
+            if (phone.length >= 11) {
+                let msg = generateMessageForEmployee(emp.id);
+                if(msg) messagesArray.push({ to: phone, message: msg });
+            }
+        });
+
+        if(messagesArray.length === 0) return alert("No valid contacts found.");
+        let check = confirm(`Send to ${messagesArray.length} employees?`);
+        if(!check) return;
+
+        alert("Bulk Processing Started...");
+        try {
+            let res = await fetch("/proxy/smsapimany", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ api_key: SMS_API_KEY, senderid: SMS_SENDER_ID, messages: messagesArray })
+            });
+            let txt = await res.text();
+            if(txt.includes("202")) alert(`✅ Success! Sent to ${messagesArray.length} people.`);
+            else alert("❌ Error: " + txt);
+        } catch(e) { alert("❌ Failed: " + e.message); }
+    }
+
+    // ৫. API Helper
+    async function callSmsApi(phone, msg) {
+        let p = String(phone).replace(/[^0-9]/g, '');
+        if (p.length === 11 && p.startsWith('0')) p = '88' + p;
+        try {
+            let res = await fetch("/proxy/smsapi", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ api_key: SMS_API_KEY, senderid: SMS_SENDER_ID, number: p, message: msg })
+            });
+            let txt = await res.text();
+            return txt.includes("202");
+        } catch(e) { return false; }
+    }
+
+    async function checkApiBalanceBtn() {
+        const btn = document.getElementById('modal-balance-btn');
+        btn.innerHTML = `Checking...`;
+        try {
+            let res = await fetch(`/proxy/balance?api_key=${SMS_API_KEY}`);
+            let data = await res.json();
+            btn.innerHTML = `৳ ${parseFloat(data.balance).toFixed(2)}`;
+            btn.classList.replace('bg-indigo-600', 'bg-emerald-600');
+            setTimeout(() => { btn.innerHTML = `Check Again`; btn.classList.replace('bg-emerald-600', 'bg-indigo-600'); }, 5000);
+        } catch(e) { btn.innerHTML = `Error`; }
+    }
+
+    // ৬. CSV এক্সপোর্ট (মডাল থেকে)
+    function triggerCsvExport() {
+        closeSmsModal();
+        let csvContent = "Phone,Message\n";
+        employees.forEach(emp => {
+            if (!emp.phone) return;
+            let msg = generateMessageForEmployee(emp.id);
+            if(!msg) return;
+            csvContent += `"${emp.phone}","${msg.replace(/"/g, '""')}"\n`;
+        });
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' }); 
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `Salary_SMS_${monthInput.value}_${yearInput.innerText}.csv`;
+        link.click();
+    }
+                                                                                 
         </script>
 </body>
 </html>
