@@ -879,8 +879,7 @@
                 status.textContent = '✓ Applied!';
             }, 2000);
         }
-
-        /**
+    /**
      * ডাইনামিক SMS জেনারেটর এবং CSV এক্সপোর্ট 
      */
     function generateAndDownloadCSV() {
@@ -912,11 +911,11 @@
 
             let msg = "";
 
-            // কন্ডিশন: যদি কোনো ইনক্রিমেন্ট/ডিক্রিমেন্ট, বোনাস বা কর্তন না থাকে
+            // শর্ট মেসেজ কন্ডিশন: যদি কোনো পরিবর্তন না থাকে
             if (salaryDiff === 0 && extra === 0 && absentDays === 0) {
                 msg = `Dear ${emp.name}, your salary for ${monthYear} has been processed and the net payable amount is ${netPayable} BDT; Please collect it from the office. -ARDM`;
             } else {
-                // বিস্তারিত মেসেজ (যদি কোনো পরিবর্তন থাকে)
+                // বিস্তারিত মেসেজ জেনারেট (যদি কোনো পরিবর্তন থাকে)
                 msg = `Dear ${emp.name}, Your salary for ${monthYear} has been processed.\n\n`;
                 
                 msg += `- Basic Salary: ${dbSalary} BDT\n`;
@@ -944,6 +943,7 @@
                     }
                 }
 
+                // মেসেজের শেষ অংশ
                 msg += `\nNet Payable Now: ${netPayable} BDT\n\n`;
                 msg += `Please visit the office to collect your payment.\n\n`;
                 msg += `- Abdur Razzaq Dakhil Madrasah`;
@@ -967,7 +967,8 @@
         link.click();
         document.body.removeChild(link);
     }
-                                                                                      }
+
+                                                                                     }
         </script>
 </body>
 </html>
