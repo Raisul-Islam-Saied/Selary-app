@@ -42,6 +42,7 @@
             padding: 8px 10px;
             color: #111827;
             font-size: 20px;
+            transition: padding 0.2s;
         }
 
         th {
@@ -71,37 +72,25 @@
 
         /* === Dynamic Columns Logic (Normal vs Compact Mode) === */
         .name-desig-col { display: none; }
-        .adj-col { display: none; }
         .bonus-deduction-col { display: none; }
         .absent-col { display: none; }
 
-        .show-absent .absent-col { display: table-cell; }
+        /* ADJ column is ALWAYS visible in UI to allow individual edits */
+        .adj-col { display: table-cell; } 
         
-        .compact-mode .name-only-col, 
-        .compact-mode .desig-only-col { display: none; }
-        .compact-mode .name-desig-col { display: table-cell; }
-
-        .has-adjustments .adj-col { display: table-cell; }
+        .show-absent .absent-col { display: table-cell; }
         .show-bonus-deduction .bonus-deduction-col { display: table-cell; }
+        
+        /* When table is in compact mode (Bonus or Adjustments exist) */
+        table.compact-mode .name-only-col, 
+        table.compact-mode .desig-only-col { display: none; }
+        table.compact-mode .name-desig-col { display: table-cell; }
 
-        /* Column Widths (Normal) */
-        .sl-col { width: 3%; text-align: center; }
-        .name-only-col { width: 22%; text-align: left; }
-        .desig-only-col { width: 23%; text-align: left; }
-        .salary-col { width: 13%; text-align: center; }
-        .absent-col { width: 8%; text-align: center; }
-        .extra-type-col { width: 13%; text-align: center; }
-        .total-col-hdr { width: 13%; text-align: center; }
-        .sig-col { width: 13%; text-align: center; }
-
-        /* Column Widths (Compact overrides) */
-        .compact-mode .name-desig-col { width: 26%; text-align: left; }
-        .compact-mode .salary-col { width: 12%; }
-        .compact-mode .bonus-deduction-col { width: 8%; text-align: center; }
-        .compact-mode .extra-type-col { width: 12%; }
-        .compact-mode .adj-col { width: 9%; text-align: center; }
-        .compact-mode .total-col-hdr { width: 12%; }
-        .compact-mode .sig-col { width: 10%; }
+        /* Reduce padding in compact mode to fit everything nicely */
+        table.compact-mode th, 
+        table.compact-mode td {
+            padding: 4px 6px;
+        }
 
         /* Highlight editable areas in web view */
         @media screen {
@@ -142,12 +131,11 @@
             }
         }
 
-        /* Print Specific Styles */
+        /* === Print Specific Styles === */
         @media print {
             @page {
                 size: A4 portrait;
                 margin: 2cm 1.5cm;
-                page-break-after:avoid; 
             }
             body {
                 background-color: transparent !important;
@@ -162,9 +150,16 @@
             .no-print { display: none !important; } 
             
             th { background-color: transparent !important; color-adjust: exact; -webkit-print-color-adjust: exact; }
-            th, td { border: 1px solid #000 !important; 
-            font-size: 14px !important ;
-        }
+            th, td { 
+                border: 1px solid #000 !important; 
+                font-size: 14px !important ;
+            }
+            
+            table.compact-mode th, 
+            table.compact-mode td {
+                padding: 3px 5px !important;
+                font-size: 13px !important;
+            }
 
             .input-cell { background-color: transparent !important; box-shadow: none !important; }
             .inline-input { border-bottom: none !important; padding: 0 !important; padding-left: 5px !important; }
@@ -177,7 +172,6 @@
                 display: block; width: 100%;
             }
             
-            /* For the new month select dropdown printing */
             #month-input {
                 appearance: none; -webkit-appearance: none;
                 background: transparent; border: none;
@@ -190,15 +184,32 @@
                 display: table-cell !important;
             }
             
-            /* === প্রিন্ট করার সময় Absent কলাম সম্পূর্ণ গায়েব থাকবে === */
+            /* Print: Absent column is always hidden */
             .absent-col {
                 display: none !important;
             }
 
-            /* Signature wrapper break control */
+            /* Print: HIDE ADJ column completely IF not in compact mode */
+            table:not(.compact-mode) .adj-col {
+                display: none !important;
+            }
+
+            /* === PAGE BREAKING FIXES === */
+            /* Prevent rows (Name vs Desig) from breaking across pages */
+            tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            td, th {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            /* Signature wrapper layout and page breaking */
             .signatures-wrapper {
-                page-break-inside: avoid;
-                break-inside: avoid;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                margin-top: 100px !important; /* Pushes signatures further down the last page */
             }
         }
 
@@ -275,6 +286,19 @@
             background: #bbf7d0;
             margin: 0 2px;
         }
+
+        /* Column Width Distribution for UI Layout */
+        th:nth-child(1), td:nth-child(1) { width:3%; text-align: center; }
+        .name-only-col { width: 19%; text-align: left; }
+        .desig-only-col { width: 19%; text-align: left; }
+        .name-desig-col { width: 25%; text-align: left; }
+        .salary-col { width: 12%; text-align: center; }
+        .absent-col { width: 7%; text-align: center; }
+        .bonus-deduction-col { width: 7%; text-align: center; }
+        .extra-type-col { width: 11%; text-align: center; }
+        .adj-col { width: 8%; text-align: center; }
+        .total-col-hdr { width: 12%; text-align: center; }
+        .sig-col { width: 9%; text-align: center; }
     </style>
 </head>
 <body>
@@ -371,7 +395,7 @@
         <table id="main-table" class="show-absent">
             <thead>
                 <tr>
-                    <th class="sl-col">Sl.</th>
+                    <th>Sl.</th>
                     <th class="name-only-col">Name of Employee</th>
                     <th class="desig-only-col">Designation</th>
                     <th class="name-desig-col">Name & Designation</th>
@@ -401,7 +425,7 @@
             </div>
         </div>
 
-        <!-- Signatures (Page break logic implemented here) -->
+        <!-- Signatures (Page break rules applied to wrapper) -->
         <div class="signatures-wrapper flex justify-between text-center text-sm font-bold" style="margin-top:60px;">
             <div>
                 <div class="border-t border-black w-32 mx-auto mb-1"></div>
@@ -527,7 +551,7 @@
             return isFixed ? defaultSalary : enteredSalary;
         }
 
-        // Initialize Table structure for Dynamic Layout
+        // Initialize Table structure for Dynamic Layout (reduced padding markup applied)
         function renderTable() {
             tbody.innerHTML = '';
             
@@ -538,20 +562,25 @@
                 tr.setAttribute('data-id', emp.id);
                 tr.setAttribute('data-default-salary', emp.defaultSalary); 
                 tr.innerHTML = `
-                    <td class="text-center sl-col">${emp.id}</td>
+                    <td class="text-center">${emp.id}</td>
+                    
                     <!-- Separate Name & Desig for Normal Mode -->
                     <td class="name-col name-only-col">${emp.name}</td>
                     <td class="desig-only-col">${emp.desig}</td>
-                    <!-- Combined Name & Desig for Compact Mode -->
-                    <td class="name-col name-desig-col"><div class="font-semibold text-gray-900">${emp.name}</div><div class="text-sm font-normal text-gray-600">${emp.desig}</div></td>
                     
-                    <td class="input-cell salary-col"><input type="number" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
+                    <!-- Combined Name & Desig for Compact Mode -->
+                    <td class="name-col name-desig-col">
+                        <div class="font-semibold text-gray-900 leading-tight">${emp.name}</div>
+                        <div class="text-xs text-gray-600 mt-0.5">${emp.desig}</div>
+                    </td>
+                    
+                    <td class="input-cell"><input type="number" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
                     <td class="input-cell absent-col"><input type="number" class="absent-input" placeholder="0"></td>
                     <td class="bonus-deduction-col text-center font-medium text-red-600 align-middle"><span class="bonus-deduction-text"></span></td>
-                    <td class="input-cell extra-type-col"><input type="number" class="extra-input" data-field="extra" ${readonlyAttr}></td>
+                    <td class="input-cell"><input type="number" class="extra-input" data-field="extra" ${readonlyAttr}></td>
                     <td class="input-cell adj-col"><input type="number" class="adj-input" placeholder="0" ${readonlyAttr}></td>
-                    <td class="text-right font-semibold total-col total-col-hdr"></td>
-                    <td class="sig-col"></td>
+                    <td class="text-right font-semibold total-col"></td>
+                    <td></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -728,12 +757,6 @@
             } else {
                 mainTable.classList.remove('show-bonus-deduction');
             }
-
-            if (hasAdjustments) {
-                mainTable.classList.add('has-adjustments');
-            } else {
-                mainTable.classList.remove('has-adjustments');
-            }
             
             const grandTotalEl = document.getElementById('grand-total-text');
             if (grandTotal > 0) {
@@ -810,7 +833,7 @@
                 
                 extraTypeSelect.value = 'deduction';
                 mainTable.classList.add('show-absent');
-                mainTable.classList.remove('show-bonus-deduction', 'has-adjustments', 'compact-mode');
+                mainTable.classList.remove('show-bonus-deduction', 'compact-mode');
                 
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
                     tr.querySelector('.absent-input').value = '';
@@ -1248,4 +1271,6 @@
     </script>
 </body>
 </html>
+
+
 
