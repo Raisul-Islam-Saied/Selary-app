@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -38,7 +39,7 @@
         
         th, td {
             border: 1px solid #1f2937; 
-            padding: 2px 5px;
+            padding: 8px 10px;
             color: #111827;
             font-size: 20px;
         }
@@ -68,20 +69,39 @@
         }
         input[type="number"] { -moz-appearance: textfield; }
 
-        /* === Absent & Bonus Deduction & Adj Column হাইড/শো করার সিএসএস === */
-        .absent-col {
-            display: none;
-        }
-        .show-absent .absent-col {
-            display: table-cell;
-        }
+        /* === Dynamic Columns Logic (Normal vs Compact Mode) === */
+        .name-desig-col { display: none; }
+        .adj-col { display: none; }
+        .bonus-deduction-col { display: none; }
+        .absent-col { display: none; }
 
-        .bonus-deduction-col {
-            display: none;
-        }
-        .show-bonus-deduction .bonus-deduction-col {
-            display: table-cell;
-        }
+        .show-absent .absent-col { display: table-cell; }
+        
+        .compact-mode .name-only-col, 
+        .compact-mode .desig-only-col { display: none; }
+        .compact-mode .name-desig-col { display: table-cell; }
+
+        .has-adjustments .adj-col { display: table-cell; }
+        .show-bonus-deduction .bonus-deduction-col { display: table-cell; }
+
+        /* Column Widths (Normal) */
+        .sl-col { width: 3%; text-align: center; }
+        .name-only-col { width: 22%; text-align: left; }
+        .desig-only-col { width: 23%; text-align: left; }
+        .salary-col { width: 13%; text-align: center; }
+        .absent-col { width: 8%; text-align: center; }
+        .extra-type-col { width: 13%; text-align: center; }
+        .total-col-hdr { width: 13%; text-align: center; }
+        .sig-col { width: 13%; text-align: center; }
+
+        /* Column Widths (Compact overrides) */
+        .compact-mode .name-desig-col { width: 26%; text-align: left; }
+        .compact-mode .salary-col { width: 12%; }
+        .compact-mode .bonus-deduction-col { width: 8%; text-align: center; }
+        .compact-mode .extra-type-col { width: 12%; }
+        .compact-mode .adj-col { width: 9%; text-align: center; }
+        .compact-mode .total-col-hdr { width: 12%; }
+        .compact-mode .sig-col { width: 10%; }
 
         /* Highlight editable areas in web view */
         @media screen {
@@ -164,18 +184,21 @@
                 color: #000; font-family: inherit; font-size: inherit;
                 text-align: left;
             }
+            
             th:last-child,
             td:last-child {
                 display: table-cell !important;
             }
+            
             /* === প্রিন্ট করার সময় Absent কলাম সম্পূর্ণ গায়েব থাকবে === */
             .absent-col {
                 display: none !important;
             }
 
-            /* === Adjustments Column Auto Hide Logic for Print === */
-            table:not(.has-adjustments) .adj-col {
-                display: none !important;
+            /* Signature wrapper break control */
+            .signatures-wrapper {
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
         }
 
@@ -348,23 +371,22 @@
         <table id="main-table" class="show-absent">
             <thead>
                 <tr>
-                    <th style="width: 3%;">Sl.</th>
-                    <!-- Designation merged with Name -->
-                    <th style="width: 25%; text-align: left;">Name & Designation</th>
-                    <th style="width: 12%; text-align: center;">Salary</th>
-                    <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
-                    <!-- Bonus Deduction Column -->
-                    <th class="bonus-deduction-col" style="width: 8%; text-align: center;">Deduct</th>
-                    <th style="width: 12%;">
+                    <th class="sl-col">Sl.</th>
+                    <th class="name-only-col">Name of Employee</th>
+                    <th class="desig-only-col">Designation</th>
+                    <th class="name-desig-col">Name & Designation</th>
+                    <th class="salary-col">Salary</th>
+                    <th class="absent-col">Absent</th>
+                    <th class="bonus-deduction-col">Ded.</th>
+                    <th class="extra-type-col">
                         <select id="extra-type" class="type-select w-full text-center">
-                            <option value="deduction" selected>Deduct</option>
+                            <option value="deduction" selected>Deduction</option>
                             <option value="bonus">Bonus</option>
                         </select>
                     </th>
-                    <!-- Adjustments Column -->
-                    <th class="adj-col" style="width: 10%; text-align: center;">Adj</th>
-                    <th style="width: 12%; text-align: center;">Total</th>
-                    <th style="width: 10%;">Signature</th>
+                    <th class="adj-col">Adj.</th>
+                    <th class="total-col-hdr">Total</th>
+                    <th class="sig-col">Signature</th>
                 </tr>
             </thead>
             <tbody id="salary-body">
@@ -379,8 +401,8 @@
             </div>
         </div>
 
-        <!-- Signatures -->
-        <div style="margin-top:60px;" class="flex justify-between text-center text-sm font-bold">
+        <!-- Signatures (Page break logic implemented here) -->
+        <div class="signatures-wrapper flex justify-between text-center text-sm font-bold" style="margin-top:60px;">
             <div>
                 <div class="border-t border-black w-32 mx-auto mb-1"></div>
                 <p>Prepared By</p>
@@ -505,7 +527,7 @@
             return isFixed ? defaultSalary : enteredSalary;
         }
 
-        // Initialize Table
+        // Initialize Table structure for Dynamic Layout
         function renderTable() {
             tbody.innerHTML = '';
             
@@ -516,18 +538,20 @@
                 tr.setAttribute('data-id', emp.id);
                 tr.setAttribute('data-default-salary', emp.defaultSalary); 
                 tr.innerHTML = `
-                    <td class="text-center">${emp.id}</td>
-                    <!-- Name & Designation Combined -->
-                    <td class="name-col"><div class="font-semibold text-gray-900">${emp.name}</div><div class="text-sm font-normal text-gray-600">${emp.desig}</div></td>
-                    <td class="input-cell"><input type="number" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
+                    <td class="text-center sl-col">${emp.id}</td>
+                    <!-- Separate Name & Desig for Normal Mode -->
+                    <td class="name-col name-only-col">${emp.name}</td>
+                    <td class="desig-only-col">${emp.desig}</td>
+                    <!-- Combined Name & Desig for Compact Mode -->
+                    <td class="name-col name-desig-col"><div class="font-semibold text-gray-900">${emp.name}</div><div class="text-sm font-normal text-gray-600">${emp.desig}</div></td>
+                    
+                    <td class="input-cell salary-col"><input type="number" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
                     <td class="input-cell absent-col"><input type="number" class="absent-input" placeholder="0"></td>
-                    <!-- Bonus Deduction Cell -->
                     <td class="bonus-deduction-col text-center font-medium text-red-600 align-middle"><span class="bonus-deduction-text"></span></td>
-                    <td class="input-cell"><input type="number" class="extra-input" data-field="extra" ${readonlyAttr}></td>
-                    <!-- Adjustments Cell -->
+                    <td class="input-cell extra-type-col"><input type="number" class="extra-input" data-field="extra" ${readonlyAttr}></td>
                     <td class="input-cell adj-col"><input type="number" class="adj-input" placeholder="0" ${readonlyAttr}></td>
-                    <td class="text-right font-semibold total-col"></td>
-                    <td></td>
+                    <td class="text-right font-semibold total-col total-col-hdr"></td>
+                    <td class="sig-col"></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -542,12 +566,6 @@
 
         const recalcAll = () => {
             const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
-            
-            if (extraTypeSelect.value === 'bonus') {
-                mainTable.classList.add('show-bonus-deduction');
-            } else {
-                mainTable.classList.remove('show-bonus-deduction');
-            }
 
             document.querySelectorAll('tr[data-id]').forEach(tr => {
                 const baseCalcSalary = getBaseSalaryForCalc(tr);
@@ -659,7 +677,6 @@
                 deduction = Math.round((baseCalcSalary / daysInMonth) * absentDays);
             }
 
-            // Update visible Bonus Deduction cell text
             tr.querySelector('.bonus-deduction-text').innerText = deduction > 0 ? deduction : '';
 
             let total = 0;
@@ -697,7 +714,21 @@
                 }
             });
             
-            // Adjustments column visibility toggle for printing
+            const isBonus = extraTypeSelect.value === 'bonus';
+
+            // Layout Mode Switcher based on conditions
+            if (isBonus || hasAdjustments) {
+                mainTable.classList.add('compact-mode');
+            } else {
+                mainTable.classList.remove('compact-mode');
+            }
+
+            if (isBonus) {
+                mainTable.classList.add('show-bonus-deduction');
+            } else {
+                mainTable.classList.remove('show-bonus-deduction');
+            }
+
             if (hasAdjustments) {
                 mainTable.classList.add('has-adjustments');
             } else {
@@ -751,8 +782,6 @@
                 if(data.year) yearInput.innerText = data.year;
                 if(data.type) extraTypeSelect.value = data.type;
                 
-                if (data.type === 'bonus') mainTable.classList.add('show-bonus-deduction');
-
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
                     const id = tr.getAttribute('data-id');
                     if (data.records && data.records[id]) {
@@ -781,7 +810,7 @@
                 
                 extraTypeSelect.value = 'deduction';
                 mainTable.classList.add('show-absent');
-                mainTable.classList.remove('show-bonus-deduction');
+                mainTable.classList.remove('show-bonus-deduction', 'has-adjustments', 'compact-mode');
                 
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
                     tr.querySelector('.absent-input').value = '';
@@ -802,7 +831,6 @@
             setTimeout(() => { status.style.opacity = '0'; }, 2000);
         }
 
-        // প্রিন্ট করার ঠিক আগে বেতনের মান পরিবর্তন করার লজিক 
         window.addEventListener('beforeprint', () => {
             if (extraTypeSelect.value === 'bonus') {
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
@@ -882,9 +910,6 @@
             });
         }
    
-        /**
-         * applyBulkAdjust() - এখন সরাসরি Adjustments কলামে মান সেট করবে
-         */
         function applyBulkAdjust() {
             const mode = document.getElementById('adj-mode').value;
             const val = parseFloat(document.getElementById('adj-value').value);
@@ -930,9 +955,6 @@
             setTimeout(() => { status.style.opacity = '0'; }, 2000);
         }
 
-        /**
-         * resetBulkAdjust() - Adjustments কলাম ফাঁকা করে দেবে
-         */
         function resetBulkAdjust() {
             const wasReadonly = !allowManualEdit;
             if (wasReadonly) {
@@ -959,7 +981,7 @@
         }
 
     // ==========================================
-    // AI SMS MASTER CONTROLLER (Adjustments added)
+    // AI SMS MASTER CONTROLLER
     // ==========================================
 
     const SMS_API_KEY = "MH9rEHMsOE7AQogZWrL2";
@@ -1226,3 +1248,4 @@
     </script>
 </body>
 </html>
+
