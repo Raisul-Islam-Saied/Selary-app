@@ -68,11 +68,18 @@
         }
         input[type="number"] { -moz-appearance: textfield; }
 
-        /* === Absent Column হাইড/শো করার সিএসএস === */
+        /* === Absent & Bonus Deduction & Adj Column হাইড/শো করার সিএসএস === */
         .absent-col {
             display: none;
         }
         .show-absent .absent-col {
+            display: table-cell;
+        }
+
+        .bonus-deduction-col {
+            display: none;
+        }
+        .show-bonus-deduction .bonus-deduction-col {
             display: table-cell;
         }
 
@@ -165,9 +172,14 @@
             .absent-col {
                 display: none !important;
             }
+
+            /* === Adjustments Column Auto Hide Logic for Print === */
+            table:not(.has-adjustments) .adj-col {
+                display: none !important;
+            }
         }
 
-        /* ===== SALARY ADJUSTER PANEL STYLES (নতুন — মূল কোড স্পর্শ করা হয়নি) ===== */
+        /* ===== SALARY ADJUSTER PANEL STYLES ===== */
         #adj-panel {
             background: linear-gradient(135deg, #f0fdf4 0%, #f0f9ff 100%);
             border: 1.5px solid #86efac;
@@ -259,7 +271,6 @@
             <span id="save-status" class="text-sm text-green-600 font-medium opacity-0 transition-opacity duration-300">✓ Auto-saved</span>
         </div>
         <div class="flex items-center gap-5">
-            <!-- === নতুন: Fix Base চেকবক্স (সবসময় দৃশ্যমান থাকবে) === -->
             <label class="flex items-center gap-2 cursor-pointer select-none text-gray-700 font-medium">
                 <input type="checkbox" id="fix-base-toggle" class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
                 <span class="text-green-700">Fix Base</span>
@@ -275,7 +286,7 @@
         </div>
     </div>
 
-    <!-- ===== SALARY ADJUSTER PANEL (নতুন — মূল কোডের বাইরে) ===== -->
+    <!-- ===== SALARY ADJUSTER PANEL ===== -->
     <div class="max-w-4xl mx-auto px-4 no-print">
         <div id="adj-panel">
             <label>⚡ Bulk Salary Adjust:</label>
@@ -289,7 +300,7 @@
             <input type="number" id="adj-value" placeholder="Amount" min="0" style="width:110px;">
             <button id="adj-btn" onclick="applyBulkAdjust()">Apply to All</button>
             <div class="adj-divider"></div>
-            <button id="adj-reset-btn" onclick="resetBulkAdjust()">↩ Restore DB</button>
+            <button id="adj-reset-btn" onclick="resetBulkAdjust()">↩ Clear Adjustments</button>
             <span id="adj-status">✓ Applied!</span>
         </div>
     </div>
@@ -298,11 +309,10 @@
     <!-- Main Document -->
     <div class="document-container">
         
-        <!-- Pre-printed Pad Header Mockup (Hidden on Print) -->
+        <!-- Pre-printed Pad Header Mockup -->
         <div class="text-center mb-8 no-print border-b-2 border-gray-200 pb-6">
             <h1 class="text-3xl font-bold text-gray-900 tracking-wide">Abdur Razzak Dakhil Madrasa</h1>
             <p class="text-gray-600 mt-1 font-medium">Sarafbhata, Rangunia, Chattogram.</p>
-          
         </div>
 
         <!-- Document Title -->
@@ -339,19 +349,22 @@
             <thead>
                 <tr>
                     <th style="width: 3%;">Sl.</th>
-                    <th style="width: 22%; text-align: left;">Name of Employee</th>
-                    <th style="width: 23%; text-align: left;">Designation</th>
-                    <th style="width: 13%; text-align: center;">Salary</th>
-                    <!-- Absent (Days) কলাম -->
+                    <!-- Designation merged with Name -->
+                    <th style="width: 25%; text-align: left;">Name & Designation</th>
+                    <th style="width: 12%; text-align: center;">Salary</th>
                     <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
-                    <th style="width: 13%;">
+                    <!-- Bonus Deduction Column -->
+                    <th class="bonus-deduction-col" style="width: 8%; text-align: center;">Deduction</th>
+                    <th style="width: 12%;">
                         <select id="extra-type" class="type-select w-full text-center">
                             <option value="deduction" selected>Deduction</option>
                             <option value="bonus">Bonus</option>
                         </select>
                     </th>
-                    <th style="width: 13%; text-align: center;">Total</th>
-                    <th style="width: 13%;">Signature</th>
+                    <!-- Adjustments Column -->
+                    <th class="adj-col" style="width: 10%; text-align: center;">Adjustments</th>
+                    <th style="width: 12%; text-align: center;">Total</th>
+                    <th style="width: 10%;">Signature</th>
                 </tr>
             </thead>
             <tbody id="salary-body">
@@ -381,11 +394,13 @@
                 <div class="border-t border-black w-40 mx-auto mb-1"></div>
                 <p>Superintendent</p>
                 <p class="font-normal text-xs">(Signature & Seal)</p>
-                
             </div>
         </div>
 
-        </div> <div id="ai-sms-modal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        </div> 
+        
+        <!-- SMS Modal (Unchanged Layout) -->
+        <div id="ai-sms-modal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
             
             <div class="bg-gradient-to-r from-violet-600 to-indigo-600 p-5 flex justify-between items-center text-white">
@@ -441,33 +456,30 @@
         </div>
     </div>
 
-    
-
-
-    <!-- Logic Script (মূল — একটি অক্ষরও পরিবর্তন করা হয়নি) -->
+    <!-- Logic Script -->
     <script>
         let allowManualEdit = localStorage.getItem('madrasa_edit_mode') === 'true';
 
         // Employee Data
-      const employees = [
-    { id: 1, name: "Md Jabedul Islam", desig: "Superintendent", defaultSalary: 5000, phone: "8801837713062" },
-    { id: 2, name: "Md Rakibul Anwar", desig: "Assistant Head", defaultSalary: 4500, phone: "8801572911065" },
-    { id: 3, name: "Nandita Shil", desig: "Senior Teacher", defaultSalary: 4500, phone: "8801749860972" },
-    { id: 4, name: "Md Joynal Abedin", desig: "Senior Mudarris", defaultSalary: 4500, phone: "8801646505949" },
-    { id: 5, name: "Mahafoujul Hoque Ador", desig: "Senior Teacher", defaultSalary: 4000, phone: "8801881609751" },
-    { id: 6, name: "Muhammad Sohel", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801575427921" },
-    { id: 7, name: "Any Akter Niso", desig: "Assistant Teacher", defaultSalary: 3500, phone: "8801617389043" },
-    { id: 8, name: "Nur Kamal Tamjid", desig: "Assistant Mudarris", defaultSalary: 3500, phone: "8801810598698" },
-    { id: 9, name: "Sadia Jahan", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801814138700" },
-    { id: 10, name: "Sabrina Sultana Priya", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801608927540" },
-    { id: 11, name: "Tausiful Hoque Mayen", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801797594046" },
-    { id: 12, name: "Raisul Islam Saied", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801610988489" },
-    { id: 13, name: "Fahmida Sikder Jhuma", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801831818588" },
-    { id: 14, name: "Urmi Karim Samu", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801823958817" },
-    { id: 15, name: "Md Mijan", desig: "Assistant Teacher", defaultSalary: 3000, phone: "8801814999592" },
-    { id: 16, name: "Arifa Akter", desig: "Assistant Teacher", defaultSalary: 2000, phone: "8801871152548" },
-    { id: 17, name: "Niamat Ali", desig: "Office Assistant", defaultSalary: 2600, phone: "8801870312623" }
-];
+        const employees = [
+            { id: 1, name: "Md Jabedul Islam", desig: "Superintendent", defaultSalary: 5000, phone: "8801837713062" },
+            { id: 2, name: "Md Rakibul Anwar", desig: "Assistant Head", defaultSalary: 4500, phone: "8801572911065" },
+            { id: 3, name: "Nandita Shil", desig: "Senior Teacher", defaultSalary: 4500, phone: "8801749860972" },
+            { id: 4, name: "Md Joynal Abedin", desig: "Senior Mudarris", defaultSalary: 4500, phone: "8801646505949" },
+            { id: 5, name: "Mahafoujul Hoque Ador", desig: "Senior Teacher", defaultSalary: 4000, phone: "8801881609751" },
+            { id: 6, name: "Muhammad Sohel", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801575427921" },
+            { id: 7, name: "Any Akter Niso", desig: "Assistant Teacher", defaultSalary: 3500, phone: "8801617389043" },
+            { id: 8, name: "Nur Kamal Tamjid", desig: "Assistant Mudarris", defaultSalary: 3500, phone: "8801810598698" },
+            { id: 9, name: "Sadia Jahan", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801814138700" },
+            { id: 10, name: "Sabrina Sultana Priya", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801608927540" },
+            { id: 11, name: "Tausiful Hoque Mayen", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801797594046" },
+            { id: 12, name: "Raisul Islam Saied", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801610988489" },
+            { id: 13, name: "Fahmida Sikder Jhuma", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801831818588" },
+            { id: 14, name: "Urmi Karim Samu", desig: "Assistant Teacher", defaultSalary: 3300, phone: "8801823958817" },
+            { id: 15, name: "Md Mijan", desig: "Assistant Teacher", defaultSalary: 3000, phone: "8801814999592" },
+            { id: 16, name: "Arifa Akter", desig: "Assistant Teacher", defaultSalary: 2000, phone: "8801871152548" },
+            { id: 17, name: "Niamat Ali", desig: "Office Assistant", defaultSalary: 2600, phone: "8801870312623" }
+        ];
 
         const tbody = document.getElementById('salary-body');
         const monthInput = document.getElementById('month-input');
@@ -485,7 +497,7 @@
             }
         }
 
-        // Helper function: Get base salary for calculations (either typed or DB default)
+        // Helper function
         function getBaseSalaryForCalc(tr) {
             const enteredSalary = parseFloat(tr.querySelector('.salary-input').value) || 0;
             const defaultSalary = parseFloat(tr.getAttribute('data-default-salary')) || 0;
@@ -502,15 +514,18 @@
             employees.forEach(emp => {
                 const tr = document.createElement('tr');
                 tr.setAttribute('data-id', emp.id);
-                // মূল বেতন ডাটাবেস থেকে ট্যাগে সংরক্ষণ করা হলো 
                 tr.setAttribute('data-default-salary', emp.defaultSalary); 
                 tr.innerHTML = `
                     <td class="text-center">${emp.id}</td>
-                    <td class="name-col">${emp.name}</td>
-                    <td>${emp.desig}</td>
+                    <!-- Name & Designation Combined -->
+                    <td class="name-col"><div class="font-semibold text-gray-900">${emp.name}</div><div class="text-sm font-normal text-gray-600">${emp.desig}</div></td>
                     <td class="input-cell"><input type="number" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
                     <td class="input-cell absent-col"><input type="number" class="absent-input" placeholder="0"></td>
+                    <!-- Bonus Deduction Cell -->
+                    <td class="bonus-deduction-col text-center font-medium text-red-600 align-middle"><span class="bonus-deduction-text"></span></td>
                     <td class="input-cell"><input type="number" class="extra-input" data-field="extra" ${readonlyAttr}></td>
+                    <!-- Adjustments Cell -->
+                    <td class="input-cell adj-col"><input type="number" class="adj-input" placeholder="0" ${readonlyAttr}></td>
                     <td class="text-right font-semibold total-col"></td>
                     <td></td>
                 `;
@@ -528,6 +543,12 @@
         const recalcAll = () => {
             const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
             
+            if (extraTypeSelect.value === 'bonus') {
+                mainTable.classList.add('show-bonus-deduction');
+            } else {
+                mainTable.classList.remove('show-bonus-deduction');
+            }
+
             document.querySelectorAll('tr[data-id]').forEach(tr => {
                 const baseCalcSalary = getBaseSalaryForCalc(tr);
                 const extraInput = tr.querySelector('.extra-input');
@@ -574,7 +595,7 @@
                         const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
                         
                         if (inputDays > daysInMonth) {
-                            alert("ভুল ইনপুট! " + monthInput.value + " মাসে সর্বোচ্চ " + daysInMonth + " দিন রয়েছে।");
+                            alert("ভুল ইনপুট! " + monthInput.value + " মাসে সর্বোচ্চ " + daysInMonth + " দিন রয়েছে।");
                             input.value = ''; 
                         }
                     }
@@ -614,7 +635,6 @@
             yearInput.addEventListener('input', recalcAll);
 
             extraTypeSelect.addEventListener('change', () => {
-                // সব সময় Absent কলাম দৃশ্যমান থাকবে 
                 mainTable.classList.add('show-absent');
                 recalcAll(); 
             });
@@ -630,44 +650,59 @@
             const baseCalcSalary = getBaseSalaryForCalc(tr);
             const extra = parseFloat(tr.querySelector('.extra-input').value) || 0;
             const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
+            const adj = parseFloat(tr.querySelector('.adj-input').value) || 0;
             const isBonus = extraTypeSelect.value === 'bonus';
             
-            // কর্তনের হিসাব (উভয় ক্ষেত্রেই - ফিক্স অন থাকলে ডাটাবেস বেতন থেকে কাটবে)
             let deduction = 0;
             if (absentDays > 0 && baseCalcSalary > 0) {
                 const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
                 deduction = Math.round((baseCalcSalary / daysInMonth) * absentDays);
             }
 
+            // Update visible Bonus Deduction cell text
+            tr.querySelector('.bonus-deduction-text').innerText = deduction > 0 ? deduction : '';
+
             let total = 0;
-            if (enteredSalary > 0 || extra > 0) {
+            if (enteredSalary > 0 || extra > 0 || adj !== 0) {
                 if (isBonus) {
-                    // বোনাস থাকলে: (বেতন - কর্তন) + বোনাস
-                    total = (enteredSalary - deduction) + extra;
+                    total = (enteredSalary - deduction) + extra + adj;
                 } else {
-                    // কর্তন মোডে extra টাই হচ্ছে মূল কর্তন
-                    total = enteredSalary - extra;
+                    total = enteredSalary - extra + adj;
                 }
             }
             
             const totalCol = tr.querySelector('.total-col');
-            if(total === 0 && !tr.querySelector('.salary-input').value && !tr.querySelector('.extra-input').value) {
+            if(total === 0 && !tr.querySelector('.salary-input').value && !tr.querySelector('.extra-input').value && !tr.querySelector('.adj-input').value) {
                 totalCol.innerText = '';
             } else {
                 totalCol.innerText = total.toLocaleString('en-IN');
             }
 
-            // প্রিন্টের সময় বেতন কলামে কর্তন-পরবর্তী বেতন দেখানোর জন্য ডাটা সেভ রাখা হলো
             tr.dataset.baseSalary = tr.querySelector('.salary-input').value;
             tr.dataset.deduction = deduction;
         }
 
         function calculateGrandTotal() {
             let grandTotal = 0;
-            document.querySelectorAll('.total-col').forEach(col => {
-                const val = parseFloat(col.innerText.replace(/,/g, '')) || 0;
+            let hasAdjustments = false;
+
+            document.querySelectorAll('tr[data-id]').forEach(tr => {
+                const totalCol = tr.querySelector('.total-col');
+                const val = parseFloat(totalCol.innerText.replace(/,/g, '')) || 0;
                 grandTotal += val;
+                
+                const adjVal = parseFloat(tr.querySelector('.adj-input').value);
+                if (adjVal && adjVal !== 0) {
+                    hasAdjustments = true;
+                }
             });
+            
+            // Adjustments column visibility toggle for printing
+            if (hasAdjustments) {
+                mainTable.classList.add('has-adjustments');
+            } else {
+                mainTable.classList.remove('has-adjustments');
+            }
             
             const grandTotalEl = document.getElementById('grand-total-text');
             if (grandTotal > 0) {
@@ -697,7 +732,8 @@
                 const s = tr.querySelector('.salary-input').value;
                 const a = tr.querySelector('.absent-input').value;
                 const e = tr.querySelector('.extra-input').value;
-                data.records[id] = { salary: s, absent: a, extra: e };
+                const adj = tr.querySelector('.adj-input').value;
+                data.records[id] = { salary: s, absent: a, extra: e, adj: adj };
             });
 
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -706,7 +742,6 @@
 
         function loadData() {
             const saved = localStorage.getItem(STORAGE_KEY);
-            // ডাটা লোড করার সময়ও Absent কলাম দৃশ্যমান রাখা
             mainTable.classList.add('show-absent');
 
             if (saved) {
@@ -715,6 +750,8 @@
                 if(data.month) monthInput.value = data.month;
                 if(data.year) yearInput.innerText = data.year;
                 if(data.type) extraTypeSelect.value = data.type;
+                
+                if (data.type === 'bonus') mainTable.classList.add('show-bonus-deduction');
 
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
                     const id = tr.getAttribute('data-id');
@@ -724,6 +761,7 @@
                         }
                         tr.querySelector('.absent-input').value = data.records[id].absent || '';
                         tr.querySelector('.extra-input').value = data.records[id].extra || '';
+                        tr.querySelector('.adj-input').value = data.records[id].adj || '';
                         calculateRow(tr);
                     }
                 });
@@ -743,10 +781,12 @@
                 
                 extraTypeSelect.value = 'deduction';
                 mainTable.classList.add('show-absent');
+                mainTable.classList.remove('show-bonus-deduction');
                 
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
                     tr.querySelector('.absent-input').value = '';
                     tr.querySelector('.extra-input').value = '';
+                    tr.querySelector('.adj-input').value = '';
                     calculateRow(tr); 
                 });
                 
@@ -762,7 +802,7 @@
             setTimeout(() => { status.style.opacity = '0'; }, 2000);
         }
 
-        // === প্রিন্ট করার ঠিক আগে বেতনের মান পরিবর্তন করার লজিক ===
+        // প্রিন্ট করার ঠিক আগে বেতনের মান পরিবর্তন করার লজিক 
         window.addEventListener('beforeprint', () => {
             if (extraTypeSelect.value === 'bonus') {
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
@@ -770,7 +810,6 @@
                     const baseSalary = parseFloat(tr.dataset.baseSalary) || 0;
                     const deduction = parseFloat(tr.dataset.deduction) || 0;
                     
-                    // বেতনের কলামে কর্তন-পরবর্তী বেতন বসিয়ে দেওয়া হলো
                     if (baseSalary > 0 && deduction > 0) {
                         salaryInput.value = baseSalary - deduction;
                     }
@@ -778,7 +817,6 @@
             }
         });
 
-        // === প্রিন্ট হওয়ার পর আবার মূল বেতনে ফিরিয়ে আনার লজিক ===
         window.addEventListener('afterprint', () => {
             if (extraTypeSelect.value === 'bonus') {
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
@@ -792,13 +830,12 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Edit Toggle Logic
             editToggle.checked = allowManualEdit;
             editToggle.addEventListener('change', (e) => {
                 allowManualEdit = e.target.checked;
                 localStorage.setItem('madrasa_edit_mode', allowManualEdit);
                 
-                document.querySelectorAll('.salary-input, .extra-input').forEach(input => {
+                document.querySelectorAll('.salary-input, .extra-input, .adj-input').forEach(input => {
                     if (allowManualEdit) {
                         input.removeAttribute('readonly');
                     } else {
@@ -807,7 +844,6 @@
                 });
             });
 
-            // Fix Base Toggle Logic (সবসময় প্রযোজ্য)
             let isFixBase = localStorage.getItem('madrasa_fix_base_mode') === 'true';
             fixBaseToggle.checked = isFixBase;
 
@@ -846,12 +882,8 @@
             });
         }
    
-/**
-         * applyBulkAdjust()
-         * - মূল employees[] array বা data-default-salary attribute পরিবর্তন করে না।
-         * - শুধু salary-input এর value পরিবর্তন করে।
-         * - Fix Base চালু থাকলেও কর্তন/বোনাস মূল DB বেতন থেকে হবে (আগের মতো)।
-         * - Apply করার পর recalcAll() ডাকা হয় যাতে Total কলাম আপডেট হয়।
+        /**
+         * applyBulkAdjust() - এখন সরাসরি Adjustments কলামে মান সেট করবে
          */
         function applyBulkAdjust() {
             const mode = document.getElementById('adj-mode').value;
@@ -862,69 +894,57 @@
                 return;
             }
 
-            // Unlock করা না থাকলে temporarily unlock করে apply করব
             const wasReadonly = !allowManualEdit;
             if (wasReadonly) {
-                document.querySelectorAll('.salary-input').forEach(i => i.removeAttribute('readonly'));
+                document.querySelectorAll('.adj-input').forEach(i => i.removeAttribute('readonly'));
             }
 
             document.querySelectorAll('tr[data-id]').forEach(tr => {
-                const input = tr.querySelector('.salary-input');
-                // বর্তমানে যা দেখাচ্ছে সেটাই base (DB value নয়)
-                const currentSalary = parseFloat(input.value) || 0;
-                // DB-তে যা আছে (পরিবর্তন হবে না)
-                const dbSalary = parseFloat(tr.getAttribute('data-default-salary')) || 0;
-
-                let newSalary = currentSalary;
+                const currentSalary = parseFloat(tr.querySelector('.salary-input').value) || 0;
+                let adj = 0;
 
                 if (mode === 'increase_pct') {
-                    newSalary = Math.round(currentSalary * (1 + val / 100));
+                    adj = Math.round(currentSalary * (val / 100));
                 } else if (mode === 'decrease_pct') {
-                    newSalary = Math.max(0, Math.round(currentSalary * (1 - val / 100)));
+                    adj = -Math.round(currentSalary * (val / 100));
                 } else if (mode === 'set_fixed') {
-                    newSalary = Math.round(val);
+                    adj = Math.round(val) - currentSalary;
                 } else if (mode === 'increase_flat') {
-                    newSalary = currentSalary + Math.round(val);
+                    adj = Math.round(val);
                 } else if (mode === 'decrease_flat') {
-                    newSalary = Math.max(0, currentSalary - Math.round(val));
+                    adj = -Math.round(val);
                 }
-
-                input.value = newSalary;
+                
+                const adjInput = tr.querySelector('.adj-input');
+                adjInput.value = adj !== 0 ? adj : '';
             });
 
-            // যদি আগে locked ছিল, আবার lock করে দাও
             if (wasReadonly) {
-                document.querySelectorAll('.salary-input').forEach(i => i.setAttribute('readonly', 'true'));
+                document.querySelectorAll('.adj-input').forEach(i => i.setAttribute('readonly', 'true'));
             }
 
-            // মূল recalcAll ডাকো — এতে Deduction/Bonus সব আগের নিয়মে কাজ করবে
             recalcAll();
 
-            // Status দেখাও
             const status = document.getElementById('adj-status');
             status.style.opacity = '1';
             setTimeout(() => { status.style.opacity = '0'; }, 2000);
         }
 
         /**
-         * resetBulkAdjust()
-         * - সব salary-input কে মূল DB (employees[]) এর defaultSalary-তে ফিরিয়ে দেয়।
-         * - data-default-salary attribute থেকে পড়া হয়, employees[] array অটুট থাকে।
+         * resetBulkAdjust() - Adjustments কলাম ফাঁকা করে দেবে
          */
         function resetBulkAdjust() {
             const wasReadonly = !allowManualEdit;
             if (wasReadonly) {
-                document.querySelectorAll('.salary-input').forEach(i => i.removeAttribute('readonly'));
+                document.querySelectorAll('.adj-input').forEach(i => i.removeAttribute('readonly'));
             }
 
             document.querySelectorAll('tr[data-id]').forEach(tr => {
-                const input = tr.querySelector('.salary-input');
-                const dbSalary = tr.getAttribute('data-default-salary');
-                if (dbSalary) input.value = dbSalary;
+                tr.querySelector('.adj-input').value = '';
             });
 
             if (wasReadonly) {
-                document.querySelectorAll('.salary-input').forEach(i => i.setAttribute('readonly', 'true'));
+                document.querySelectorAll('.adj-input').forEach(i => i.setAttribute('readonly', 'true'));
             }
 
             recalcAll();
@@ -937,8 +957,9 @@
                 status.textContent = '✓ Applied!';
             }, 2000);
         }
-            // ==========================================
-    // AI SMS MASTER CONTROLLER & MODAL LOGIC (UPDATED UI & API)
+
+    // ==========================================
+    // AI SMS MASTER CONTROLLER (Adjustments added)
     // ==========================================
 
     const SMS_API_KEY = "MH9rEHMsOE7AQogZWrL2";
@@ -946,7 +967,6 @@
     const SMS_BULK_PASS = "saied783";
     const SMS_RATE = 0.35; 
 
-    // ১. মাস্টার মেসেজ জেনারেটর
     function generateMessageForEmployee(id) {
         const tr = document.querySelector(`tr[data-id="${id}"]`);
         const emp = employees.find(e => e.id === id);
@@ -962,6 +982,7 @@
 
         const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
         const extra = parseFloat(tr.querySelector('.extra-input').value) || 0;
+        const adj = parseFloat(tr.querySelector('.adj-input').value) || 0;
         const netPayable = tr.querySelector('.total-col').innerText.trim() || "0";
         const baseCalcSalary = getBaseSalaryForCalc(tr);
 
@@ -971,7 +992,7 @@
         }
 
         let msg = "";
-        if (salaryDiff === 0 && extra === 0 && absentDays === 0) {
+        if (salaryDiff === 0 && extra === 0 && absentDays === 0 && adj === 0) {
             msg = `Dear ${emp.name}, your salary for ${monthYear} has been processed and the net payable amount is ${netPayable} BDT; Please collect it from the office. -ARDM`;
         } else {
             msg = `Dear ${emp.name}, Your salary for ${monthYear} has been processed.\n\n`;
@@ -983,14 +1004,16 @@
             if (type === 'deduction') {
                 let madrasahHold = extra - absentDeduction;
                 if (madrasahHold > 0) msg += `- Madrasah Deduction/Hold: -${madrasahHold} BDT\n`;
-                else if (madrasahHold < 0) msg += `- Other Adjustment: +${Math.abs(madrasahHold)} BDT\n`;
+                else if (madrasahHold < 0) msg += `- Other Deduction Adjustment: +${Math.abs(madrasahHold)} BDT\n`;
             }
+            if (adj > 0) msg += `- Bulk Adjustment: +${adj} BDT\n`;
+            else if (adj < 0) msg += `- Bulk Adjustment: ${adj} BDT\n`;
+            
             msg += `\nNet Payable Now: ${netPayable} BDT\n\nPlease visit the office to collect your payment.\n\n- Abdur Razzaq Dakhil Madrasah`;
         }
         return msg;
     }
 
-    // ২. মডাল কন্ট্রোলার
     const smsModal = document.getElementById('ai-sms-modal');
     const modalWorkspace = document.getElementById('modal-workspace');
 
@@ -1012,7 +1035,6 @@
         setTimeout(() => smsModal.classList.add('hidden'), 300);
     }
 
-    // ৩. ডাইনামিক ওয়ার্কস্পেস (UI - আপনার পছন্দ অনুযায়ী লিস্ট স্টাইল)
     function showSection(type) {
         modalWorkspace.classList.remove('hidden');
         
@@ -1075,7 +1097,6 @@
         }
     }
 
-    // ৪. লাইভ প্রিভিউ এবং সিঙ্গল সেন্ড
     function previewAndSendSingle(id) {
         const previewBox = document.getElementById('single-preview-box');
         const previewText = document.getElementById('single-preview-text');
@@ -1086,7 +1107,6 @@
         previewText.innerText = msg;
         previewBox.classList.remove('hidden');
         
-        // প্রিভিউ বক্সটি স্ক্রল করে সামনে নিয়ে আসা
         previewBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         confirmBtn.onclick = async () => {
@@ -1114,7 +1134,6 @@
         };
     }
 
-    // ৫. বাল্ক এক্সেকিউশন
     async function executeModalBulk() {
         const pass = document.getElementById('modal-bulk-pass').value;
         if(pass !== SMS_BULK_PASS) return alert("Incorrect Admin Password!");
@@ -1149,7 +1168,6 @@
         }
     }
 
-    // ৬. API Helper (Error Handling Update)
     async function callSmsApi(phone, msg) {
         let p = String(phone).replace(/[^0-9]/g, '');
         if (p.length === 11 && p.startsWith('0')) p = '88' + p;
@@ -1159,15 +1177,12 @@
                 body: JSON.stringify({ api_key: SMS_API_KEY, senderid: SMS_SENDER_ID, number: p, message: msg })
             });
             let txt = await res.text();
-            console.log("SMS API Response:", txt); // ব্রাউজার কনসোলে এরর চেক করার জন্য
             return txt.includes("202");
         } catch(e) { 
-            console.error("Fetch API Failed:", e);
             return false; 
         }
     }
 
-    // ব্যালেন্স চেকার ফিক্স (Raw Text এবং JSON উভয় সাপোর্ট)
     async function checkApiBalanceBtn() {
         const btn = document.getElementById('modal-balance-btn');
         btn.innerHTML = `Checking...`;
@@ -1177,11 +1192,9 @@
             let finalBalance = "0.00";
 
             try {
-                // যদি API JSON ফরমেটে ডেটা দেয়
                 let data = JSON.parse(rawText);
                 finalBalance = parseFloat(data.balance || data).toFixed(2);
             } catch(e) {
-                // যদি API সরাসরি নাম্বার টেক্সট হিসেবে দেয়
                 finalBalance = parseFloat(rawText).toFixed(2);
             }
 
@@ -1192,11 +1205,9 @@
             setTimeout(() => { btn.innerHTML = `Check Again`; btn.classList.replace('bg-emerald-600', 'bg-indigo-600'); }, 5000);
         } catch(e) { 
             btn.innerHTML = `Fail (Proxy?)`; 
-            console.error("Balance Fetch Error:", e);
         }
     }
 
-    // ৭. CSV এক্সপোর্ট
     function triggerCsvExport() {
         closeSmsModal();
         let csvContent = "Phone,Message\n";
@@ -1211,8 +1222,7 @@
         link.href = URL.createObjectURL(blob);
         link.download = `Salary_SMS_${monthInput.value}_${yearInput.innerText}.csv`;
         link.click();
-    }
-                                                                 
-        </script>
+    }                                                     
+    </script>
 </body>
 </html>
