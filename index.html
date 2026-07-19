@@ -78,15 +78,57 @@
         }
         input[type="number"] { -moz-appearance: textfield; }
 
-        /* === Absent কলাম: ইউআই/স্ক্রিনে সবসময় দেখাবে। শুধু প্রিন্টে, বোনাস মোডে হাইড হবে (নিচে @media print দ্রষ্টব্য) === */
+        /* === Absent কলাম: ইউআই/স্ক্রিনে সবসময় দেখাবে। প্রিন্টে শুধু Bonus+Adjust একসাথে হলে হাইড হবে (নিচে @media print দ্রষ্টব্য) === */
 
-        /* === Adjust কলাম হাইড/শো (কোনো মান থাকলেই কেবল দেখাবে) === */
-        .adjust-col {
+        /* === Adjust কলাম: ইউআই/স্ক্রিনে সবসময় দেখাবে (মান থাকুক বা না থাকুক), শুধু প্রিন্টে খালি হলে হাইড হবে === */
+        .adjust-col .adjust-display {
+            display: inline-block;
+            width: 100%;
+            text-align: right;
+            cursor: pointer;
+            font-weight: 700;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        @media screen {
+            .adjust-col .adjust-display:hover {
+                background: #e0f2fe;
+            }
+        }
+        .adjust-display.is-plus { color: #16a34a; }
+        .adjust-display.is-minus { color: #dc2626; }
+        .adjust-display.is-empty { color: #94a3b8; font-weight: 400; }
+
+        /* === Deduction/Bonus এর ভেতরে বোনাসের সাব-লাইন === */
+        .bonus-sub {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #16a34a;
+            text-align: right;
+            margin-top: 2px;
+        }
+
+        /* === সিঙ্গেল-এমপ্লয়ি Adjust মডাল === */
+        #single-adjust-modal {
+            position: fixed; inset: 0; z-index: 110;
+            background: rgba(15,23,42,0.6);
             display: none;
+            align-items: center; justify-content: center;
+            padding: 16px;
         }
-        .show-adjust .adjust-col {
-            display: table-cell;
+        #single-adjust-modal.open { display: flex; }
+        #single-adjust-box {
+            background: #fff; border-radius: 12px; padding: 20px;
+            width: 100%; max-width: 360px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
         }
+        #single-adjust-box select, #single-adjust-box input[type="number"] {
+            width: 100%; border: 1.5px solid #cbd5e1; border-radius: 6px;
+            padding: 8px 10px; font-size: 14px; margin-top: 4px; margin-bottom: 12px;
+            text-align: left;
+        }
+        #single-adjust-box label { font-size: 12px; font-weight: 700; color: #475569; }
 
         /* === Signature কলাম শুধু প্রিন্টে দেখাবে, স্ক্রিনে হাইড থাকবে === */
         @media screen {
@@ -180,9 +222,17 @@
                 text-align: left;
             }
 
-            /* === Bonus মোডে Absent কলাম শুধু প্রিন্টে হাইড হবে, ইউআই/স্ক্রিনে সবসময় দেখাবে === */
+            /* === Absent কলাম প্রিন্টে হাইড হবে শুধুমাত্র তখনই, যখন Bonus মোড + Adjust কলাম দুটোই সক্রিয় থাকে (ঘর বেড়ে যাওয়া এড়াতে) === */
             .hide-absent-print .absent-col {
                 display: none !important;
+            }
+
+            /* === Adjust কলাম প্রিন্টে হাইড থাকবে যদি কোনো মান না থাকে; মান থাকলে দেখাবে === */
+            .adjust-col {
+                display: none !important;
+            }
+            .show-adjust .adjust-col {
+                display: table-cell !important;
             }
 
             /* === নির্ভুল পেজ ব্রেকিং === */
@@ -491,6 +541,36 @@
         </div>
     </div>
 
+    <!-- সিঙ্গেল-এমপ্লয়ি Adjust মডাল (একজনকে আলাদাভাবে Adjust দেওয়ার জন্য) -->
+    <div id="single-adjust-modal" class="no-print">
+        <div id="single-adjust-box">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h3 class="text-base font-bold text-gray-800" id="single-adjust-name">—</h3>
+                    <p class="text-xs text-gray-500 mt-1" id="single-adjust-current">বর্তমান Adjust: নেই</p>
+                </div>
+                <button onclick="closeSingleAdjustModal()" class="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>
+            </div>
+
+            <label>Adjust মোড</label>
+            <select id="single-adj-mode">
+                <option value="increase_pct">Increase %</option>
+                <option value="decrease_pct">Decrease %</option>
+                <option value="set_fixed">Set Fixed ৳</option>
+                <option value="increase_flat">Increase ৳ (Flat)</option>
+                <option value="decrease_flat">Decrease ৳ (Flat)</option>
+            </select>
+
+            <label>পরিমাণ</label>
+            <input type="number" id="single-adj-value" placeholder="যেমন: 5 অথবা 500" min="0">
+
+            <div class="flex gap-2 mt-2">
+                <button onclick="applySingleAdjust()" class="flex-1 bg-indigo-600 text-white font-bold py-2 rounded hover:bg-indigo-700 transition">Apply</button>
+                <button onclick="closeSingleAdjustModal()" class="flex-1 bg-gray-100 text-gray-700 font-bold py-2 rounded hover:bg-gray-200 transition">বাতিল</button>
+            </div>
+        </div>
+    </div>
+
     
 
 
@@ -546,26 +626,39 @@
             return base + adjustVal;
         }
 
-        // Bonus মোডে Absent কলাম শুধু প্রিন্টে হাইড হবে (ইউআই/স্ক্রিনে সবসময় দেখাবে ও এডিটযোগ্য থাকবে)
+        // Absent কলাম প্রিন্টে হাইড হবে শুধু তখনই যখন Bonus মোড + Adjust কলাম দুটোই একসাথে সক্রিয় (ঘর বেড়ে যাওয়া এড়াতে)।
+        // ইউআই/স্ক্রিনে Absent সবসময় দেখাবে ও এডিটযোগ্য থাকবে।
         function updateAbsentVisibility() {
-            if (extraTypeSelect.value === 'bonus') {
-                mainTable.classList.add('hide-absent-print');
-            } else {
-                mainTable.classList.remove('hide-absent-print');
-            }
+            const isBonus = extraTypeSelect.value === 'bonus';
+            const hasAdjust = mainTable.classList.contains('show-adjust');
+            mainTable.classList.toggle('hide-absent-print', isBonus && hasAdjust);
         }
 
-        // Adjust কলামে কোনো মান না থাকলে কলামটাই হাইড থাকবে
+        // Adjust ইনপুটের মান অনুযায়ী +/- সহ ডিসপ্লে টেক্সট ও রং সেট করা হয়
+        function updateAdjustDisplay(tr) {
+            const input = tr.querySelector('.adjust-input');
+            const display = tr.querySelector('.adjust-display');
+            if (!input || !display) return;
+            const val = parseFloat(input.value) || 0;
+            if (val === 0) {
+                display.innerText = '—';
+                display.className = 'adjust-display is-empty';
+            } else if (val > 0) {
+                display.innerText = '+' + val.toLocaleString('en-IN');
+                display.className = 'adjust-display is-plus';
+            } else {
+                display.innerText = val.toLocaleString('en-IN'); // ঋণাত্মক সংখ্যায় স্বয়ংক্রিয়ভাবে - বসে যায়
+                display.className = 'adjust-display is-minus';
+            }
+        }
         function updateAdjustVisibility() {
             let hasAdjust = false;
             document.querySelectorAll('.adjust-input').forEach(inp => {
                 if (parseFloat(inp.value)) hasAdjust = true;
             });
-            if (hasAdjust) {
-                mainTable.classList.add('show-adjust');
-            } else {
-                mainTable.classList.remove('show-adjust');
-            }
+            mainTable.classList.toggle('show-adjust', hasAdjust);
+            // Adjust-এর অবস্থা Absent-এর প্রিন্ট-ভিজিবিলিটিকে প্রভাবিত করে, তাই আবার আপডেট করা হলো
+            updateAbsentVisibility();
         }
 
         // Initialize Table
@@ -584,8 +677,14 @@
                     <td class="name-col">${emp.name}<span class="desig-sub">${emp.desig}</span></td>
                     <td class="input-cell"><input type="number" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
                     <td class="input-cell absent-col"><input type="number" class="absent-input" placeholder="0"></td>
-                    <td class="input-cell"><input type="number" class="extra-input" data-field="extra" ${readonlyAttr}></td>
-                    <td class="input-cell adjust-col"><input type="number" class="adjust-input" placeholder="0" ${readonlyAttr}></td>
+                    <td class="input-cell">
+                        <input type="number" class="extra-input" data-field="extra" readonly>
+                        <span class="bonus-sub"></span>
+                    </td>
+                    <td class="input-cell adjust-col" onclick="openSingleAdjustModal(${emp.id})">
+                        <input type="hidden" class="adjust-input" value="">
+                        <span class="adjust-display is-empty">—</span>
+                    </td>
                     <td class="text-right font-semibold total-col"></td>
                     <td class="signature-col"></td>
                 `;
@@ -601,36 +700,17 @@
         }
 
         const recalcAll = () => {
-            const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
-            updateAbsentVisibility();
-            
             document.querySelectorAll('tr[data-id]').forEach(tr => {
-                const baseCalcSalary = getBaseSalaryForCalc(tr);
-                const extraInput = tr.querySelector('.extra-input');
                 const absentInput = tr.querySelector('.absent-input');
-                
                 if (absentInput.value !== '') {
+                    const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
                     const absentDays = parseFloat(absentInput.value) || 0;
                     if (absentDays > daysInMonth) {
                         absentInput.value = '';
                     }
                 }
-                
-                if (extraTypeSelect.value === 'deduction') {
-                    const absentDays = parseFloat(absentInput.value) || 0;
-                    if (absentDays > 0 && baseCalcSalary > 0) {
-                        extraInput.value = Math.round((baseCalcSalary / daysInMonth) * absentDays);
-                    } else {
-                        extraInput.value = ''; 
-                    }
-                } else if (extraTypeSelect.value === 'bonus') {
-                    if (baseCalcSalary > 0) {
-                        extraInput.value = Math.round(baseCalcSalary / 2); 
-                    } else {
-                        extraInput.value = '';
-                    }
-                }
             });
+            // Deduction সবসময় Absent Days থেকে অটো-ক্যালকুলেট হয়ে দেখাবে (calculateRow-এর ভেতরেই হয়)
             document.querySelectorAll('tr[data-id]').forEach(calculateRow);
             calculateGrandTotal();
             updateTitle();
@@ -639,12 +719,9 @@
         };
 
         function attachListeners() {
-            document.querySelectorAll('input[type="number"]').forEach(input => {
+            document.querySelectorAll('.salary-input, .absent-input').forEach(input => {
                 input.addEventListener('input', (e) => {
                     const tr = input.closest('tr');
-                    const baseCalcSalary = getBaseSalaryForCalc(tr);
-                    const extraInput = tr.querySelector('.extra-input');
-                    const absentInput = tr.querySelector('.absent-input');
 
                     if (input.classList.contains('absent-input')) {
                         const inputDays = parseFloat(input.value) || 0;
@@ -656,36 +733,8 @@
                         }
                     }
 
-                    if ((input.classList.contains('salary-input') || input.classList.contains('adjust-input')) && extraTypeSelect.value === 'bonus') {
-                        if (baseCalcSalary > 0) {
-                            extraInput.value = Math.round(baseCalcSalary / 2);
-                        } else {
-                            extraInput.value = ''; 
-                        }
-                    }
-
-                    if ((input.classList.contains('salary-input') || input.classList.contains('adjust-input') || input.classList.contains('absent-input')) && extraTypeSelect.value === 'deduction') {
-                        let absentDays = parseFloat(absentInput.value) || 0;
-                        const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
-
-                        if (input.classList.contains('absent-input') && absentDays > daysInMonth) {
-                            alert(`Invalid input! ${monthInput.value} has only ${daysInMonth} days.`);
-                            absentInput.value = '';
-                            absentDays = 0;
-                        }
-
-                        if (absentDays > 0 && baseCalcSalary > 0) {
-                            extraInput.value = Math.round((baseCalcSalary / daysInMonth) * absentDays);
-                        } else if (input.classList.contains('absent-input') && absentDays === 0) {
-                            extraInput.value = ''; 
-                        }
-                    }
-
                     calculateRow(tr);
                     calculateGrandTotal(); 
-                    if (input.classList.contains('adjust-input')) {
-                        updateAdjustVisibility();
-                    }
                     triggerSave();
                 });
             });
@@ -694,8 +743,6 @@
             yearInput.addEventListener('input', recalcAll);
 
             extraTypeSelect.addEventListener('change', () => {
-                // Deduction মোডে Absent দেখাবে, Bonus মোডে Absent হাইড থাকবে
-                updateAbsentVisibility();
                 recalcAll(); 
             });
 
@@ -709,30 +756,35 @@
             const enteredSalary = parseFloat(tr.querySelector('.salary-input').value) || 0;
             const adjustVal = parseFloat(tr.querySelector('.adjust-input').value) || 0;
             const baseCalcSalary = getBaseSalaryForCalc(tr);
-            const extra = parseFloat(tr.querySelector('.extra-input').value) || 0;
             const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
             const isBonus = extraTypeSelect.value === 'bonus';
-            
-            // কর্তনের হিসাব (উভয় ক্ষেত্রেই - ফিক্স অন থাকলে ডাটাবেস বেতন থেকে কাটবে, Adjust-সহ)
+            const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
+
+            // === Deduction: Absent Days থেকে সবসময় অটো-ক্যালকুলেট ও প্রদর্শিত হবে (Bonus মোডেও) ===
             let deduction = 0;
             if (absentDays > 0 && baseCalcSalary > 0) {
-                const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
                 deduction = Math.round((baseCalcSalary / daysInMonth) * absentDays);
+            }
+            const extraInput = tr.querySelector('.extra-input');
+            extraInput.value = deduction > 0 ? deduction : '';
+
+            // === Bonus: শুধু Bonus মোডে অতিরিক্ত হিসেবে যোগ হবে, Deduction প্রতিস্থাপন করবে না ===
+            let bonusAmount = 0;
+            const bonusSub = tr.querySelector('.bonus-sub');
+            if (isBonus && baseCalcSalary > 0) {
+                bonusAmount = Math.round(baseCalcSalary / 2);
+            }
+            if (bonusSub) {
+                bonusSub.innerText = bonusAmount > 0 ? `+ Bonus: ${bonusAmount.toLocaleString('en-IN')}` : '';
             }
 
             let total = 0;
-            if (enteredSalary > 0 || extra > 0 || adjustVal !== 0) {
-                if (isBonus) {
-                    // বোনাস থাকলে: (বেতন + Adjust - কর্তন) + বোনাস
-                    total = (enteredSalary + adjustVal - deduction) + extra;
-                } else {
-                    // কর্তন মোডে: (বেতন + Adjust) - কর্তন
-                    total = (enteredSalary + adjustVal) - extra;
-                }
+            if (enteredSalary > 0 || deduction > 0 || bonusAmount > 0 || adjustVal !== 0) {
+                total = (enteredSalary + adjustVal - deduction) + bonusAmount;
             }
             
             const totalCol = tr.querySelector('.total-col');
-            if(total === 0 && !tr.querySelector('.salary-input').value && !tr.querySelector('.extra-input').value && !adjustVal) {
+            if(total === 0 && !tr.querySelector('.salary-input').value && !adjustVal) {
                 totalCol.innerText = '';
             } else {
                 totalCol.innerText = total.toLocaleString('en-IN');
@@ -741,6 +793,10 @@
             // প্রিন্টের সময় বেতন কলামে কর্তন-পরবর্তী বেতন দেখানোর জন্য ডাটা সেভ রাখা হলো
             tr.dataset.baseSalary = tr.querySelector('.salary-input').value;
             tr.dataset.deduction = deduction;
+            tr.dataset.bonus = bonusAmount;
+
+            // Adjust ডিসপ্লে (+ / - সহ) আপডেট
+            updateAdjustDisplay(tr);
         }
 
         function calculateGrandTotal() {
@@ -901,7 +957,7 @@
                 allowManualEdit = e.target.checked;
                 localStorage.setItem('madrasa_edit_mode', allowManualEdit);
                 
-                document.querySelectorAll('.salary-input, .extra-input, .adjust-input').forEach(input => {
+                document.querySelectorAll('.salary-input').forEach(input => {
                     if (allowManualEdit) {
                         input.removeAttribute('readonly');
                     } else {
@@ -1022,6 +1078,73 @@
                 status.textContent = '✓ Applied!';
             }, 2000);
         }
+
+        // ==========================================
+        // সিঙ্গেল-এমপ্লয়ি Adjust মডাল
+        // ==========================================
+        let singleAdjustEmpId = null;
+
+        function openSingleAdjustModal(empId) {
+            singleAdjustEmpId = empId;
+            const emp = employees.find(e => e.id === empId);
+            const tr = document.querySelector(`tr[data-id="${empId}"]`);
+            if (!emp || !tr) return;
+
+            document.getElementById('single-adjust-name').innerText = emp.name;
+            const currentAdjust = parseFloat(tr.querySelector('.adjust-input').value) || 0;
+            document.getElementById('single-adjust-current').innerText =
+                currentAdjust === 0 ? 'বর্তমান Adjust: নেই' : `বর্তমান Adjust: ${currentAdjust > 0 ? '+' : ''}${currentAdjust.toLocaleString('en-IN')}`;
+
+            document.getElementById('single-adj-mode').value = 'increase_pct';
+            document.getElementById('single-adj-value').value = '';
+
+            document.getElementById('single-adjust-modal').classList.add('open');
+        }
+
+        function closeSingleAdjustModal() {
+            document.getElementById('single-adjust-modal').classList.remove('open');
+            singleAdjustEmpId = null;
+        }
+
+        function applySingleAdjust() {
+            if (singleAdjustEmpId === null) return;
+            const tr = document.querySelector(`tr[data-id="${singleAdjustEmpId}"]`);
+            if (!tr) return;
+
+            const mode = document.getElementById('single-adj-mode').value;
+            const val = parseFloat(document.getElementById('single-adj-value').value);
+
+            if (isNaN(val) || val < 0) {
+                alert('অনুগ্রহ করে একটি সঠিক মান দিন।');
+                return;
+            }
+
+            const salaryInput = tr.querySelector('.salary-input');
+            const adjustInput = tr.querySelector('.adjust-input');
+
+            const currentSalary = parseFloat(salaryInput.value) || 0;
+            const currentAdjust = parseFloat(adjustInput.value) || 0;
+            const effectiveSalary = currentSalary + currentAdjust;
+
+            let newEffective = effectiveSalary;
+            if (mode === 'increase_pct') {
+                newEffective = Math.round(effectiveSalary * (1 + val / 100));
+            } else if (mode === 'decrease_pct') {
+                newEffective = Math.max(0, Math.round(effectiveSalary * (1 - val / 100)));
+            } else if (mode === 'set_fixed') {
+                newEffective = Math.round(val);
+            } else if (mode === 'increase_flat') {
+                newEffective = effectiveSalary + Math.round(val);
+            } else if (mode === 'decrease_flat') {
+                newEffective = Math.max(0, effectiveSalary - Math.round(val));
+            }
+
+            const newAdjust = newEffective - currentSalary;
+            adjustInput.value = newAdjust === 0 ? '' : newAdjust;
+
+            recalcAll();
+            closeSingleAdjustModal();
+        }
             // ==========================================
     // AI SMS MASTER CONTROLLER & MODAL LOGIC (UPDATED UI & API)
     // ==========================================
@@ -1038,7 +1161,6 @@
         if (!tr || !emp) return null;
 
         const monthYear = `${monthInput.value} ${yearInput.innerText}`;
-        const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
         const type = extraTypeSelect.value; 
 
         const dbSalary = parseFloat(tr.getAttribute('data-default-salary')) || 0;
@@ -1047,30 +1169,20 @@
         const salaryDiff = (currentSalary + adjustVal) - dbSalary;
 
         const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
-        const extra = parseFloat(tr.querySelector('.extra-input').value) || 0;
+        const absentDeduction = parseFloat(tr.dataset.deduction) || 0; // সবসময় Absent Days থেকে অটো-ক্যালকুলেটেড
+        const bonusAmount = parseFloat(tr.dataset.bonus) || 0; // শুধু Bonus মোডে থাকে
         const netPayable = tr.querySelector('.total-col').innerText.trim() || "0";
-        const baseCalcSalary = getBaseSalaryForCalc(tr);
-
-        let absentDeduction = 0;
-        if (absentDays > 0 && baseCalcSalary > 0) {
-            absentDeduction = Math.round((baseCalcSalary / daysInMonth) * absentDays);
-        }
 
         let msg = "";
-        if (salaryDiff === 0 && extra === 0 && absentDays === 0) {
+        if (salaryDiff === 0 && bonusAmount === 0 && absentDays === 0) {
             msg = `Dear ${emp.name}, your salary for ${monthYear} has been processed and the net payable amount is ${netPayable} BDT; Please collect it from the office. -ARDM`;
         } else {
             msg = `Dear ${emp.name}, Your salary for ${monthYear} has been processed.\n\n`;
             msg += `- Basic Salary: ${dbSalary} BDT\n`;
             if (salaryDiff > 0) msg += `- Salary Increment: +${salaryDiff} BDT\n`;
             else if (salaryDiff < 0) msg += `- Salary Adjustment (Decrease): ${salaryDiff} BDT\n`;
-            if (type === 'bonus' && extra > 0) msg += `- Bonus: +${extra} BDT\n`;
+            if (bonusAmount > 0) msg += `- Bonus: +${bonusAmount} BDT\n`;
             if (absentDays > 0) msg += `- Absence Deduction (${absentDays} Days): -${absentDeduction} BDT\n`;
-            if (type === 'deduction') {
-                let madrasahHold = extra - absentDeduction;
-                if (madrasahHold > 0) msg += `- Madrasah Deduction/Hold: -${madrasahHold} BDT\n`;
-                else if (madrasahHold < 0) msg += `- Other Adjustment: +${Math.abs(madrasahHold)} BDT\n`;
-            }
             msg += `\nNet Payable Now: ${netPayable} BDT\n\nPlease visit the office to collect your payment.\n\n- Abdur Razzaq Dakhil Madrasah`;
         }
         return msg;
