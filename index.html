@@ -48,7 +48,7 @@
             font-weight: bold;
         }
 
-        .name-col { white-space: nowrap; font-weight: 500; }
+        .name-col { white-space: normal; font-weight: 500; }
 
         /* নাম কলামের নিচে ছোট করে Designation দেখানোর স্টাইল */
         .desig-sub {
@@ -78,13 +78,7 @@
         }
         input[type="number"] { -moz-appearance: textfield; }
 
-        /* === Absent কলাম হাইড/শো (Deduction মোডে দেখাবে, Bonus মোডে হাইড থাকবে) === */
-        .absent-col {
-            display: none;
-        }
-        .show-absent .absent-col {
-            display: table-cell;
-        }
+        /* === Absent কলাম: ইউআই/স্ক্রিনে সবসময় দেখাবে। শুধু প্রিন্টে, বোনাস মোডে হাইড হবে (নিচে @media print দ্রষ্টব্য) === */
 
         /* === Adjust কলাম হাইড/শো (কোনো মান থাকলেই কেবল দেখাবে) === */
         .adjust-col {
@@ -102,7 +96,7 @@
             .signature-col { display: table-cell !important; }
         }
 
-        /* === প্রতি পেজে পুনরাবৃত্ত হেডিং রো === */
+        /* === প্রতি পেজে পুনরাবৃত্ত হেডিং রো (স্ক্রিনে স্বাভাবিক প্যাডিং) === */
         .print-title-row th {
             border: none !important;
             background: transparent !important;
@@ -159,9 +153,6 @@
                 box-shadow: none !important; margin: 0 !important; padding: 0 !important;
                 border: none !important; border-radius: 0 !important;
                 width: 100% !important; max-width: 100% !important;
-                display: flex !important;
-                flex-direction: column !important;
-                min-height: 25.7cm !important; /* A4 উচ্চতা বাদ @page মার্জিন (২cm+২cm) */
             }
             .no-print { display: none !important; } 
             
@@ -189,10 +180,19 @@
                 text-align: left;
             }
 
+            /* === Bonus মোডে Absent কলাম শুধু প্রিন্টে হাইড হবে, ইউআই/স্ক্রিনে সবসময় দেখাবে === */
+            .hide-absent-print .absent-col {
+                display: none !important;
+            }
+
             /* === নির্ভুল পেজ ব্রেকিং === */
             /* টেবিলের হেডার রো দ্বিতীয় পেজেও পুনরাবৃত্তি হবে */
             thead {
                 display: table-header-group;
+            }
+            /* প্রতিটি প্রিন্ট পেজে টাইটেলের উপরে অতিরিক্ত ৮০px জায়গা (আগের 2cm @page মার্জিনের সাথে যোগ হয়ে) */
+            .print-title-row th {
+                padding-top: 80px !important;
             }
             /* কোনো এমপ্লয়ির রো দুই পেজে ভেঙে যাবে না */
             tr {
@@ -203,12 +203,12 @@
             .desig-sub {
                 font-size: 10px !important;
             }
-            /* গ্র্যান্ড টোটাল ও সিগনেচার ব্লক একসাথে থাকবে, মাঝপথে কখনো কাটবে না,
-               এবং পেজে যথেষ্ট জায়গা থাকলে margin-top:auto দিয়ে পেজের নিচে বসবে */
+            /* গ্র্যান্ড টোটাল ও সিগনেচার ব্লক একসাথে থাকবে, মাঝপথে কখনো কাটবে না।
+               পেজের নিচে বসানোর margin-top স্ক্রিপ্ট (beforeprint) দিয়ে ইনলাইনে বসানো হয়,
+               তাই এখানে !important দেওয়া হয়নি (দিলে জাভাস্ক্রিপ্ট ওভাররাইড করতে পারত না) */
             #footer-block {
                 page-break-inside: avoid;
                 break-inside: avoid;
-                margin-top: auto !important;
             }
         }
 
@@ -375,7 +375,7 @@
         </div>
 
         <!-- Table -->
-        <table id="main-table" class="show-absent">
+        <table id="main-table">
             <thead>
                 <!-- Document Title: টেবিলের thead-এর ভেতরে, ফলে প্রতিটি প্রিন্ট পেজেই এটি পুনরাবৃত্তি হবে -->
                 <tr class="print-title-row">
@@ -385,18 +385,18 @@
                 </tr>
                 <tr>
                     <th style="width: 3%;">Sl.</th>
-                    <th style="width: 38%; text-align: left;">Name of Employee</th>
-                    <th style="width: 12%; text-align: center;">Salary</th>
+                    <th style="width: 26%; text-align: left;">Name of Employee</th>
+                    <th style="width: 13%; text-align: center;">Salary</th>
                     <!-- Absent (Days) কলাম -->
-                    <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
-                    <!-- Adjust কলাম: বাল্ক এডজাস্ট এখানে বসবে, মূল Salary কলাম স্পর্শ করবে না -->
-                    <th class="adjust-col" style="width: 10%; text-align: center;">Adjust</th>
-                    <th style="width: 12%;">
+                    <th class="absent-col" style="width: 9%; text-align: center;">Absent</th>
+                    <th style="width: 13%;">
                         <select id="extra-type" class="type-select w-full text-center">
                             <option value="deduction" selected>Deduction</option>
                             <option value="bonus">Bonus</option>
                         </select>
                     </th>
+                    <!-- Adjust কলাম: বাল্ক এডজাস্ট এখানে বসবে, মূল Salary কলাম স্পর্শ করবে না -->
+                    <th class="adjust-col" style="width: 11%; text-align: center;">Adjust</th>
                     <th style="width: 12%; text-align: center;">Total</th>
                     <th class="signature-col" style="width: 10%;">Signature</th>
                 </tr>
@@ -546,12 +546,12 @@
             return base + adjustVal;
         }
 
-        // Bonus মোডে Absent কলাম হাইড, Deduction মোডে দেখাবে
+        // Bonus মোডে Absent কলাম শুধু প্রিন্টে হাইড হবে (ইউআই/স্ক্রিনে সবসময় দেখাবে ও এডিটযোগ্য থাকবে)
         function updateAbsentVisibility() {
             if (extraTypeSelect.value === 'bonus') {
-                mainTable.classList.remove('show-absent');
+                mainTable.classList.add('hide-absent-print');
             } else {
-                mainTable.classList.add('show-absent');
+                mainTable.classList.remove('hide-absent-print');
             }
         }
 
@@ -584,8 +584,8 @@
                     <td class="name-col">${emp.name}<span class="desig-sub">${emp.desig}</span></td>
                     <td class="input-cell"><input type="number" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
                     <td class="input-cell absent-col"><input type="number" class="absent-input" placeholder="0"></td>
-                    <td class="input-cell adjust-col"><input type="number" class="adjust-input" placeholder="0" ${readonlyAttr}></td>
                     <td class="input-cell"><input type="number" class="extra-input" data-field="extra" ${readonlyAttr}></td>
+                    <td class="input-cell adjust-col"><input type="number" class="adjust-input" placeholder="0" ${readonlyAttr}></td>
                     <td class="text-right font-semibold total-col"></td>
                     <td class="signature-col"></td>
                 `;
@@ -862,9 +862,24 @@
                     }
                 });
             }
+
+            // === সিগনেচার ব্লককে পেজের একদম নিচে বসানোর হিসাব ===
+            const footerBlock = document.getElementById('footer-block');
+            const mainTableEl = document.getElementById('main-table');
+            if (footerBlock && mainTableEl) {
+                footerBlock.style.marginTop = ''; // আগে রিসেট করে প্রকৃত উচ্চতা মাপা হচ্ছে
+                const CM_TO_PX = 37.7952755906;
+                // A4 উচ্চতা (29.7cm) বাদ @page-এর 2cm উপরে + 2cm নিচের মার্জিন = প্রতি পেজে ব্যবহারযোগ্য উচ্চতা
+                const PAGE_CONTENT_HEIGHT_PX = 25.7 * CM_TO_PX;
+                const tableHeight = mainTableEl.offsetHeight;
+                const footerNaturalHeight = footerBlock.offsetHeight;
+                const neededMargin = PAGE_CONTENT_HEIGHT_PX - tableHeight - footerNaturalHeight;
+                // কনটেন্ট এক পেজে আঁটলেই কেবল ধাক্কা দেওয়া হবে; না আঁটলে স্বাভাবিক প্রবাহে চলে যাবে (পরের পেজে)
+                footerBlock.style.marginTop = neededMargin > 0 ? neededMargin + 'px' : '';
+            }
         });
 
-        // === প্রিন্ট হওয়ার পর আবার মূল বেতনে ফিরিয়ে আনার লজিক ===
+        // === প্রিন্ট হওয়ার পর আবার মূল বেতনে ও স্বাভাবিক মার্জিনে ফিরিয়ে আনার লজিক ===
         window.addEventListener('afterprint', () => {
             if (extraTypeSelect.value === 'bonus') {
                 document.querySelectorAll('tr[data-id]').forEach(tr => {
@@ -875,6 +890,8 @@
                     }
                 });
             }
+            const footerBlock = document.getElementById('footer-block');
+            if (footerBlock) footerBlock.style.marginTop = '';
         });
 
         document.addEventListener('DOMContentLoaded', () => {
