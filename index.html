@@ -49,6 +49,16 @@
         }
 
         .name-col { white-space: nowrap; font-weight: 500; }
+
+        /* নাম কলামের নিচে ছোট করে Designation দেখানোর স্টাইল */
+        .desig-sub {
+            display: block;
+            font-size: 12px;
+            font-weight: 400;
+            color: #4b5563;
+            white-space: normal;
+            margin-top: 2px;
+        }
         
         /* Inputs inside table */
         input[type="number"], .editable-text {
@@ -164,6 +174,28 @@
             /* === প্রিন্ট করার সময় Absent কলাম সম্পূর্ণ গায়েব থাকবে === */
             .absent-col {
                 display: none !important;
+            }
+
+            /* === নির্ভুল পেজ ব্রেকিং === */
+            /* টেবিলের হেডার রো দ্বিতীয় পেজেও পুনরাবৃত্তি হবে */
+            thead {
+                display: table-header-group;
+            }
+            /* কোনো এমপ্লয়ির রো দুই পেজে ভেঙে যাবে না */
+            tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            /* প্রিন্ট করার সময় Designation সাব-লাইন ছোট থাকবে */
+            .desig-sub {
+                font-size: 10px !important;
+            }
+            /* গ্র্যান্ড টোটাল ও সিগনেচার ব্লক একসাথে থাকবে, মাঝপথে কখনো কাটবে না —
+               জায়গা না থাকলে পুরো ব্লকটাই পরের পেজে চলে যাবে, ফলে সবসময় পেজের
+               নিচে সুন্দরভাবে বসবে */
+            #footer-block {
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
         }
 
@@ -339,8 +371,7 @@
             <thead>
                 <tr>
                     <th style="width: 3%;">Sl.</th>
-                    <th style="width: 22%; text-align: left;">Name of Employee</th>
-                    <th style="width: 23%; text-align: left;">Designation</th>
+                    <th style="width: 45%; text-align: left;">Name of Employee</th>
                     <th style="width: 13%; text-align: center;">Salary</th>
                     <!-- Absent (Days) কলাম -->
                     <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
@@ -359,29 +390,32 @@
             </tbody>
         </table>
 
-        <!-- Grand Total -->
-        <div class="flex justify-end mt-4 pr-4">
-            <div class="text-lg font-bold text-black pb-1">
-                Grand Total: <span id="grand-total-text" class="ml-3 inline-block min-w-[100px] text-right"></span>/=
+        <!-- Grand Total + Signature (একসাথে, পেজ ব্রেক হলে সম্পূর্ণ ব্লকটাই পরের পেজে যাবে) -->
+        <div id="footer-block">
+            <!-- Grand Total -->
+            <div class="flex justify-end mt-4 pr-4">
+                <div class="text-lg font-bold text-black pb-1">
+                    Grand Total: <span id="grand-total-text" class="ml-3 inline-block min-w-[100px] text-right"></span>/=
+                </div>
             </div>
-        </div>
 
-        <!-- Signatures -->
-        <div style="margin-top:60px;" class="flex justify-between text-center text-sm font-bold">
-            <div>
-                <div class="border-t border-black w-32 mx-auto mb-1"></div>
-                <p>Prepared By</p>
-                <p class="font-normal text-xs">(Signature & Date)</p>
-            </div>
-            <div>
-                <div class="border-t border-black w-32 mx-auto mb-1"></div>
-                <p>Date of Payment</p>
-            </div>
-            <div>
-                <div class="border-t border-black w-40 mx-auto mb-1"></div>
-                <p>Superintendent</p>
-                <p class="font-normal text-xs">(Signature & Seal)</p>
-                
+            <!-- Signatures -->
+            <div style="margin-top:60px;" class="flex justify-between text-center text-sm font-bold">
+                <div>
+                    <div class="border-t border-black w-32 mx-auto mb-1"></div>
+                    <p>Prepared By</p>
+                    <p class="font-normal text-xs">(Signature & Date)</p>
+                </div>
+                <div>
+                    <div class="border-t border-black w-32 mx-auto mb-1"></div>
+                    <p>Date of Payment</p>
+                </div>
+                <div>
+                    <div class="border-t border-black w-40 mx-auto mb-1"></div>
+                    <p>Superintendent</p>
+                    <p class="font-normal text-xs">(Signature & Seal)</p>
+                    
+                </div>
             </div>
         </div>
 
@@ -506,8 +540,7 @@
                 tr.setAttribute('data-default-salary', emp.defaultSalary); 
                 tr.innerHTML = `
                     <td class="text-center">${emp.id}</td>
-                    <td class="name-col">${emp.name}</td>
-                    <td>${emp.desig}</td>
+                    <td class="name-col">${emp.name}<span class="desig-sub">${emp.desig}</span></td>
                     <td class="input-cell"><input type="number" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
                     <td class="input-cell absent-col"><input type="number" class="absent-input" placeholder="0"></td>
                     <td class="input-cell"><input type="number" class="extra-input" data-field="extra" ${readonlyAttr}></td>
@@ -1012,7 +1045,7 @@
         setTimeout(() => smsModal.classList.add('hidden'), 300);
     }
 
-    // ৩. ডাইনামিক ওয়ার্কস্পেস (UI - আপনার পছন্দ অনুযায়ী লিস্ট স্টাইল)
+    // ৩. ডাইনামিক ওয়ার্কস্পেস (UI - আপনার পছন্দ অনুযায়ী লিস্ট স্টাইল)
     function showSection(type) {
         modalWorkspace.classList.remove('hidden');
         
@@ -1086,7 +1119,7 @@
         previewText.innerText = msg;
         previewBox.classList.remove('hidden');
         
-        // প্রিভিউ বক্সটি স্ক্রল করে সামনে নিয়ে আসা
+        // প্রিভিউ বক্সটি স্ক্রল করে সামনে নিয়ে আসা
         previewBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         confirmBtn.onclick = async () => {
@@ -1167,7 +1200,7 @@
         }
     }
 
-    // ব্যালেন্স চেকার ফিক্স (Raw Text এবং JSON উভয় সাপোর্ট)
+    // ব্যালেন্স চেকার ফিক্স (Raw Text এবং JSON উভয় সাপোর্ট)
     async function checkApiBalanceBtn() {
         const btn = document.getElementById('modal-balance-btn');
         btn.innerHTML = `Checking...`;
@@ -1177,11 +1210,11 @@
             let finalBalance = "0.00";
 
             try {
-                // যদি API JSON ফরমেটে ডেটা দেয়
+                // যদি API JSON ফরমেটে ডেটা দেয়
                 let data = JSON.parse(rawText);
                 finalBalance = parseFloat(data.balance || data).toFixed(2);
             } catch(e) {
-                // যদি API সরাসরি নাম্বার টেক্সট হিসেবে দেয়
+                // যদি API সরাসরি নাম্বার টেক্সট হিসেবে দেয়
                 finalBalance = parseFloat(rawText).toFixed(2);
             }
 
