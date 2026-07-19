@@ -99,14 +99,16 @@
         .adjust-display.is-minus { color: #dc2626; }
         .adjust-display.is-empty { color: #94a3b8; font-weight: 400; }
 
-        /* === Deduction/Bonus এর ভেতরে বোনাসের সাব-লাইন === */
-        .bonus-sub {
-            display: block;
-            font-size: 11px;
-            font-weight: 600;
-            color: #16a34a;
-            text-align: right;
-            margin-top: 2px;
+        /* === Bonus কলাম: শুধু Bonus মোড অন থাকলে দেখাবে (স্ক্রিন+প্রিন্ট উভয়ে) === */
+        .bonus-col {
+            display: none;
+        }
+        .show-bonus .bonus-col {
+            display: table-cell;
+        }
+        .bonus-input {
+            color: #16a34a !important;
+            font-weight: 700;
         }
 
         /* === সিঙ্গেল-এমপ্লয়ি Adjust মডাল === */
@@ -429,25 +431,27 @@
             <thead>
                 <!-- Document Title: টেবিলের thead-এর ভেতরে, ফলে প্রতিটি প্রিন্ট পেজেই এটি পুনরাবৃত্তি হবে -->
                 <tr class="print-title-row">
-                    <th colspan="8" class="text-center">
+                    <th colspan="9" class="text-center">
                         <h2 id="statement-title" class="text-xl font-bold inline-block border-b-2 border-black pb-1 uppercase tracking-wider">Salary Statement</h2>
                     </th>
                 </tr>
                 <tr>
                     <th style="width: 3%;">Sl.</th>
-                    <th style="width: 26%; text-align: left;">Name of Employee</th>
-                    <th style="width: 13%; text-align: center;">Salary</th>
+                    <th style="width: 24%; text-align: left;">Name of Employee</th>
+                    <th style="width: 12%; text-align: center;">Salary</th>
                     <!-- Absent (Days) কলাম -->
-                    <th class="absent-col" style="width: 9%; text-align: center;">Absent</th>
-                    <th style="width: 13%;">
+                    <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
+                    <th style="width: 12%;">
                         <select id="extra-type" class="type-select w-full text-center">
                             <option value="deduction" selected>Deduction</option>
                             <option value="bonus">Bonus</option>
                         </select>
                     </th>
+                    <!-- Bonus কলাম: Bonus মোড অন করলেই আসবে, সরাসরি এডিটযোগ্য -->
+                    <th class="bonus-col" style="width: 10%; text-align: center;">Bonus</th>
                     <!-- Adjust কলাম: বাল্ক এডজাস্ট এখানে বসবে, মূল Salary কলাম স্পর্শ করবে না -->
-                    <th class="adjust-col" style="width: 11%; text-align: center;">Adjust</th>
-                    <th style="width: 12%; text-align: center;">Total</th>
+                    <th class="adjust-col" style="width: 10%; text-align: center;">Adjust</th>
+                    <th style="width: 11%; text-align: center;">Total</th>
                     <th class="signature-col" style="width: 10%;">Signature</th>
                 </tr>
             </thead>
@@ -679,7 +683,9 @@
                     <td class="input-cell absent-col"><input type="number" class="absent-input" placeholder="0"></td>
                     <td class="input-cell">
                         <input type="number" class="extra-input" data-field="extra" readonly>
-                        <span class="bonus-sub"></span>
+                    </td>
+                    <td class="input-cell bonus-col">
+                        <input type="number" class="bonus-input" placeholder="0">
                     </td>
                     <td class="input-cell adjust-col" onclick="openSingleAdjustModal(${emp.id})">
                         <input type="hidden" class="adjust-input" value="">
@@ -715,11 +721,12 @@
             calculateGrandTotal();
             updateTitle();
             updateAdjustVisibility();
+            updateBonusVisibility();
             triggerSave();
         };
 
         function attachListeners() {
-            document.querySelectorAll('.salary-input, .absent-input').forEach(input => {
+            document.querySelectorAll('.salary-input, .absent-input, .bonus-input').forEach(input => {
                 input.addEventListener('input', (e) => {
                     const tr = input.closest('tr');
 
@@ -743,6 +750,18 @@
             yearInput.addEventListener('input', recalcAll);
 
             extraTypeSelect.addEventListener('change', () => {
+                if (extraTypeSelect.value === 'bonus') {
+                    // Bonus মোডে সুইচ করার সময়, যাদের Bonus ঘর খালি তাদের জন্য একটা সাজেস্টেড মান (অর্ধেক বেতন) বসিয়ে দেওয়া হয় — এডিটযোগ্য থাকে
+                    document.querySelectorAll('tr[data-id]').forEach(tr => {
+                        const bonusInput = tr.querySelector('.bonus-input');
+                        if (bonusInput.value === '') {
+                            const baseCalcSalary = getBaseSalaryForCalc(tr);
+                            if (baseCalcSalary > 0) {
+                                bonusInput.value = Math.round(baseCalcSalary / 2);
+                            }
+                        }
+                    });
+                }
                 recalcAll(); 
             });
 
@@ -750,6 +769,11 @@
                 localStorage.setItem('madrasa_fix_base_mode', e.target.checked);
                 recalcAll(); 
             });
+        }
+
+        // Bonus কলাম শুধু Bonus মোড অন থাকলে দেখাবে (স্ক্রিন ও প্রিন্ট উভয়ে)
+        function updateBonusVisibility() {
+            mainTable.classList.toggle('show-bonus', extraTypeSelect.value === 'bonus');
         }
 
         function calculateRow(tr) {
@@ -768,15 +792,9 @@
             const extraInput = tr.querySelector('.extra-input');
             extraInput.value = deduction > 0 ? deduction : '';
 
-            // === Bonus: শুধু Bonus মোডে অতিরিক্ত হিসেবে যোগ হবে, Deduction প্রতিস্থাপন করবে না ===
-            let bonusAmount = 0;
-            const bonusSub = tr.querySelector('.bonus-sub');
-            if (isBonus && baseCalcSalary > 0) {
-                bonusAmount = Math.round(baseCalcSalary / 2);
-            }
-            if (bonusSub) {
-                bonusSub.innerText = bonusAmount > 0 ? `+ Bonus: ${bonusAmount.toLocaleString('en-IN')}` : '';
-            }
+            // === Bonus: আলাদা কলাম, সরাসরি এডিটযোগ্য, শুধু Bonus মোডে Total-এ যোগ হয় ===
+            const bonusInput = tr.querySelector('.bonus-input');
+            const bonusAmount = isBonus ? (parseFloat(bonusInput.value) || 0) : 0;
 
             let total = 0;
             if (enteredSalary > 0 || deduction > 0 || bonusAmount > 0 || adjustVal !== 0) {
@@ -835,7 +853,8 @@
                 const a = tr.querySelector('.absent-input').value;
                 const adj = tr.querySelector('.adjust-input').value;
                 const e = tr.querySelector('.extra-input').value;
-                data.records[id] = { salary: s, absent: a, adjust: adj, extra: e };
+                const b = tr.querySelector('.bonus-input').value;
+                data.records[id] = { salary: s, absent: a, adjust: adj, extra: e, bonus: b };
             });
 
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -861,15 +880,17 @@
                         tr.querySelector('.absent-input').value = data.records[id].absent || '';
                         tr.querySelector('.adjust-input').value = data.records[id].adjust || '';
                         tr.querySelector('.extra-input').value = data.records[id].extra || '';
+                        tr.querySelector('.bonus-input').value = data.records[id].bonus || '';
                         calculateRow(tr);
                     }
                 });
             } else {
                 document.querySelectorAll('tr[data-id]').forEach(calculateRow);
             }
-            // Deduction/Bonus মোড অনুযায়ী Absent, এবং মান থাকলে Adjust — দুটোই ঠিকভাবে দেখাবে/হাইড হবে
+            // Deduction/Bonus মোড অনুযায়ী Absent/Bonus কলাম, এবং মান থাকলে Adjust — ঠিকভাবে দেখাবে/হাইড হবে
             updateAbsentVisibility();
             updateAdjustVisibility();
+            updateBonusVisibility();
             calculateGrandTotal(); 
             updateTitle(); 
         }
@@ -887,11 +908,13 @@
                     tr.querySelector('.absent-input').value = '';
                     tr.querySelector('.adjust-input').value = '';
                     tr.querySelector('.extra-input').value = '';
+                    tr.querySelector('.bonus-input').value = '';
                     calculateRow(tr); 
                 });
                 
                 updateAbsentVisibility();
                 updateAdjustVisibility();
+                updateBonusVisibility();
                 calculateGrandTotal();
                 updateTitle(); 
                 saveData(); 
