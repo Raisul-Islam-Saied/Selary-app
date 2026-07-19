@@ -78,20 +78,12 @@
         }
         input[type="number"] { -moz-appearance: textfield; }
 
-        /* === Absent কলাম হাইড/শো === */
-        /* ইউআই-তে সবসময় দেখাবে, শুধু প্রিন্টে বোনাস মোডে হাইড হবে */
-        @media screen {
-            .absent-col {
-                display: table-cell !important;
-            }
+        /* === Absent কলাম হাইড/শো (Deduction মোডে দেখাবে, Bonus মোডে হাইড থাকবে) === */
+        .absent-col {
+            display: none;
         }
-        @media print {
-            table:not(.show-absent) .absent-col {
-                display: none !important;
-            }
-            table.show-absent .absent-col {
-                display: table-cell !important;
-            }
+        .show-absent .absent-col {
+            display: table-cell;
         }
 
         /* === Adjust কলাম হাইড/শো (কোনো মান থাকলেই কেবল দেখাবে) === */
@@ -155,14 +147,8 @@
         @media print {
             @page {
                 size: A4 portrait;
-                margin-top: calc(2cm + 80px);
-                margin-bottom: 2cm;
-                margin-left: 1.5cm;
-                margin-right: 1.5cm;
+                margin: 2cm 1.5cm;
                 page-break-after:avoid; 
-            }
-            html, body {
-                height: 100%;
             }
             body {
                 background-color: transparent !important;
@@ -175,7 +161,7 @@
                 width: 100% !important; max-width: 100% !important;
                 display: flex !important;
                 flex-direction: column !important;
-                min-height: 23.5cm !important; /* A4 উচ্চতা বাদ @page মার্জিন */
+                min-height: 25.7cm !important; /* A4 উচ্চতা বাদ @page মার্জিন (২cm+২cm) */
             }
             .no-print { display: none !important; } 
             
@@ -399,18 +385,18 @@
                 </tr>
                 <tr>
                     <th style="width: 3%;">Sl.</th>
-                    <th style="width: 30%; text-align: left;">Name of Employee</th>
+                    <th style="width: 38%; text-align: left;">Name of Employee</th>
                     <th style="width: 12%; text-align: center;">Salary</th>
                     <!-- Absent (Days) কলাম -->
                     <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
+                    <!-- Adjust কলাম: বাল্ক এডজাস্ট এখানে বসবে, মূল Salary কলাম স্পর্শ করবে না -->
+                    <th class="adjust-col" style="width: 10%; text-align: center;">Adjust</th>
                     <th style="width: 12%;">
                         <select id="extra-type" class="type-select w-full text-center">
                             <option value="deduction" selected>Deduction</option>
                             <option value="bonus">Bonus</option>
                         </select>
                     </th>
-                    <!-- Adjust কলাম: বাল্ক এডজাস্ট এখানে বসবে, মূল Salary কলাম স্পর্শ করবে না -->
-                    <th class="adjust-col" style="width: 10%; text-align: center;">Adjust</th>
                     <th style="width: 12%; text-align: center;">Total</th>
                     <th class="signature-col" style="width: 10%;">Signature</th>
                 </tr>
@@ -598,8 +584,8 @@
                     <td class="name-col">${emp.name}<span class="desig-sub">${emp.desig}</span></td>
                     <td class="input-cell"><input type="number" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
                     <td class="input-cell absent-col"><input type="number" class="absent-input" placeholder="0"></td>
-                    <td class="input-cell"><input type="number" class="extra-input" data-field="extra" ${readonlyAttr}></td>
                     <td class="input-cell adjust-col"><input type="number" class="adjust-input" placeholder="0" ${readonlyAttr}></td>
+                    <td class="input-cell"><input type="number" class="extra-input" data-field="extra" ${readonlyAttr}></td>
                     <td class="text-right font-semibold total-col"></td>
                     <td class="signature-col"></td>
                 `;
@@ -966,7 +952,7 @@
                 const salaryInput = tr.querySelector('.salary-input');
                 const adjustInput = tr.querySelector('.adjust-input');
 
-                // Salary কলামের মান কখনোই স্পর্শ করা হবে কেজি
+                // Salary কলামের মান কখনোই স্পর্শ করা হবে না
                 const currentSalary = parseFloat(salaryInput.value) || 0;
                 // আগে থেকে Adjust কলামে কিছু থাকলে সেটাসহ বর্তমান কার্যকর বেতন
                 const currentAdjust = parseFloat(adjustInput.value) || 0;
