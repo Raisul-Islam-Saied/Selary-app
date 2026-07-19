@@ -140,11 +140,9 @@
             .signature-col { display: table-cell !important; }
         }
 
-        /* === প্রতি পেজে পুনরাবৃত্ত হেডিং রো (স্ক্রিনে স্বাভাবিক প্যাডিং) === */
-        .print-title-row th {
-            border: none !important;
-            background: transparent !important;
-            padding: 0 0 14px 0 !important;
+        /* === ডকুমেন্ট টাইটেল (এখন টেবিলের বাইরে, শুধু প্রথম পেজে দেখাবে) === */
+        .print-title-row {
+            margin-bottom: 14px;
         }
 
         /* Highlight editable areas in web view */
@@ -242,8 +240,8 @@
             thead {
                 display: table-header-group;
             }
-            /* প্রতিটি প্রিন্ট পেজে টাইটেলের উপরে অতিরিক্ত ৮০px জায়গা (আগের 2cm @page মার্জিনের সাথে যোগ হয়ে) */
-            .print-title-row th {
+            /* পেজ ১-এর টাইটেলের উপরে অতিরিক্ত ৮০px জায়গা (আগের 2cm @page মার্জিনের সাথে যোগ হয়ে, শুধু প্রথম পেজে — টাইটেল আর পুনরাবৃত্তি হয় না) */
+            .print-title-row {
                 padding-top: 80px !important;
             }
             /* কোনো এমপ্লয়ির রো দুই পেজে ভেঙে যাবে না */
@@ -366,6 +364,9 @@
                 <input type="checkbox" id="edit-toggle" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                 <span>Unlock Edit</span>
             </label>
+            <button id="bonus-toggle-btn" onclick="toggleBonus()" class="px-4 py-2 rounded font-bold text-sm border-2 transition bg-white text-gray-500 border-gray-300 hover:border-emerald-400">
+                🎁 Bonus: OFF
+            </button>
             <button onclick="resetData()" class="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded hover:bg-red-100 font-medium text-sm transition">
                 Reset Data
             </button>
@@ -377,11 +378,11 @@
         <div id="adj-panel">
             <label>⚡ Bulk Salary Adjust:</label>
             <select id="adj-mode">
+                <option value="increase_flat" selected>Increase ৳ (Flat)</option>
+                <option value="decrease_flat">Decrease ৳ (Flat)</option>
                 <option value="increase_pct">Increase %</option>
                 <option value="decrease_pct">Decrease %</option>
                 <option value="set_fixed">Set Fixed ৳</option>
-                <option value="increase_flat">Increase ৳ (Flat)</option>
-                <option value="decrease_flat">Decrease ৳ (Flat)</option>
             </select>
             <input type="number" id="adj-value" placeholder="Amount" min="0" style="width:110px;">
             <button id="adj-btn" onclick="applyBulkAdjust()">Apply to All</button>
@@ -427,27 +428,27 @@
         </div>
 
         <!-- Table -->
+        <!-- Document Title: এখন টেবিলের বাইরে, তাই শুধু প্রথম পেজেই একবার দেখাবে, পরের পেজে পুনরাবৃত্তি হবে না -->
+        <div class="print-title-row text-center">
+            <h2 id="statement-title" class="text-xl font-bold inline-block border-b-2 border-black pb-1 uppercase tracking-wider">Salary Statement</h2>
+        </div>
+
         <table id="main-table">
             <thead>
-                <!-- Document Title: টেবিলের thead-এর ভেতরে, ফলে প্রতিটি প্রিন্ট পেজেই এটি পুনরাবৃত্তি হবে -->
-                <tr class="print-title-row">
-                    <th colspan="9" class="text-center">
-                        <h2 id="statement-title" class="text-xl font-bold inline-block border-b-2 border-black pb-1 uppercase tracking-wider">Salary Statement</h2>
-                    </th>
-                </tr>
                 <tr>
                     <th style="width: 3%;">Sl.</th>
-                    <th style="width: 24%; text-align: left;">Name of Employee</th>
+                    <th style="width: 27%; text-align: left;">Name of Employee</th>
                     <th style="width: 12%; text-align: center;">Salary</th>
                     <!-- Absent (Days) কলাম -->
                     <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
-                    <th style="width: 12%;">
-                        <select id="extra-type" class="type-select w-full text-center">
+                    <th style="width: 11%; text-align: center;">
+                        Deduction
+                        <select id="extra-type" style="display:none;">
                             <option value="deduction" selected>Deduction</option>
                             <option value="bonus">Bonus</option>
                         </select>
                     </th>
-                    <!-- Bonus কলাম: Bonus মোড অন করলেই আসবে, সরাসরি এডিটযোগ্য -->
+                    <!-- Bonus কলাম: Bonus টগল বাটন অন করলেই আসবে, সরাসরি এডিটযোগ্য -->
                     <th class="bonus-col" style="width: 10%; text-align: center;">Bonus</th>
                     <!-- Adjust কলাম: বাল্ক এডজাস্ট এখানে বসবে, মূল Salary কলাম স্পর্শ করবে না -->
                     <th class="adjust-col" style="width: 10%; text-align: center;">Adjust</th>
@@ -558,11 +559,11 @@
 
             <label>Adjust মোড</label>
             <select id="single-adj-mode">
+                <option value="increase_flat" selected>Increase ৳ (Flat)</option>
+                <option value="decrease_flat">Decrease ৳ (Flat)</option>
                 <option value="increase_pct">Increase %</option>
                 <option value="decrease_pct">Decrease %</option>
                 <option value="set_fixed">Set Fixed ৳</option>
-                <option value="increase_flat">Increase ৳ (Flat)</option>
-                <option value="decrease_flat">Decrease ৳ (Flat)</option>
             </select>
 
             <label>পরিমাণ</label>
@@ -610,6 +611,7 @@
         const mainTable = document.getElementById('main-table');
         const editToggle = document.getElementById('edit-toggle');
         const fixBaseToggle = document.getElementById('fix-base-toggle');
+        const bonusToggleBtn = document.getElementById('bonus-toggle-btn');
         let saveTimeout;
 
         function updateTitle() {
@@ -749,22 +751,6 @@
             monthInput.addEventListener('change', recalcAll);
             yearInput.addEventListener('input', recalcAll);
 
-            extraTypeSelect.addEventListener('change', () => {
-                if (extraTypeSelect.value === 'bonus') {
-                    // Bonus মোডে সুইচ করার সময়, যাদের Bonus ঘর খালি তাদের জন্য একটা সাজেস্টেড মান (অর্ধেক বেতন) বসিয়ে দেওয়া হয় — এডিটযোগ্য থাকে
-                    document.querySelectorAll('tr[data-id]').forEach(tr => {
-                        const bonusInput = tr.querySelector('.bonus-input');
-                        if (bonusInput.value === '') {
-                            const baseCalcSalary = getBaseSalaryForCalc(tr);
-                            if (baseCalcSalary > 0) {
-                                bonusInput.value = Math.round(baseCalcSalary / 2);
-                            }
-                        }
-                    });
-                }
-                recalcAll(); 
-            });
-
             fixBaseToggle.addEventListener('change', (e) => {
                 localStorage.setItem('madrasa_fix_base_mode', e.target.checked);
                 recalcAll(); 
@@ -773,7 +759,40 @@
 
         // Bonus কলাম শুধু Bonus মোড অন থাকলে দেখাবে (স্ক্রিন ও প্রিন্ট উভয়ে)
         function updateBonusVisibility() {
-            mainTable.classList.toggle('show-bonus', extraTypeSelect.value === 'bonus');
+            const isBonus = extraTypeSelect.value === 'bonus';
+            mainTable.classList.toggle('show-bonus', isBonus);
+            updateBonusToggleButton(isBonus);
+        }
+
+        function updateBonusToggleButton(isBonus) {
+            if (!bonusToggleBtn) return;
+            if (isBonus) {
+                bonusToggleBtn.textContent = '🎁 Bonus: ON';
+                bonusToggleBtn.className = 'px-4 py-2 rounded font-bold text-sm border-2 transition bg-emerald-600 text-white border-emerald-600';
+            } else {
+                bonusToggleBtn.textContent = '🎁 Bonus: OFF';
+                bonusToggleBtn.className = 'px-4 py-2 rounded font-bold text-sm border-2 transition bg-white text-gray-500 border-gray-300 hover:border-emerald-400';
+            }
+        }
+
+        // টগল বাটনে ক্লিক করলে Bonus মোড অন/অফ হবে (ড্রপডাউনের বদলে)
+        function toggleBonus() {
+            const turningOn = extraTypeSelect.value !== 'bonus';
+            extraTypeSelect.value = turningOn ? 'bonus' : 'deduction';
+
+            if (turningOn) {
+                // Bonus অন করার সময়, যাদের Bonus ঘর খালি তাদের জন্য একটা সাজেস্টেড মান (অর্ধেক বেতন) বসিয়ে দেওয়া হয় — এডিটযোগ্য থাকে
+                document.querySelectorAll('tr[data-id]').forEach(tr => {
+                    const bonusInput = tr.querySelector('.bonus-input');
+                    if (bonusInput.value === '') {
+                        const baseCalcSalary = getBaseSalaryForCalc(tr);
+                        if (baseCalcSalary > 0) {
+                            bonusInput.value = Math.round(baseCalcSalary / 2);
+                        }
+                    }
+                });
+            }
+            recalcAll();
         }
 
         function calculateRow(tr) {
@@ -945,14 +964,16 @@
             // === সিগনেচার ব্লককে পেজের একদম নিচে বসানোর হিসাব ===
             const footerBlock = document.getElementById('footer-block');
             const mainTableEl = document.getElementById('main-table');
+            const titleBlockEl = document.querySelector('.print-title-row');
             if (footerBlock && mainTableEl) {
                 footerBlock.style.marginTop = ''; // আগে রিসেট করে প্রকৃত উচ্চতা মাপা হচ্ছে
                 const CM_TO_PX = 37.7952755906;
                 // A4 উচ্চতা (29.7cm) বাদ @page-এর 2cm উপরে + 2cm নিচের মার্জিন = প্রতি পেজে ব্যবহারযোগ্য উচ্চতা
                 const PAGE_CONTENT_HEIGHT_PX = 25.7 * CM_TO_PX;
+                const titleHeight = titleBlockEl ? titleBlockEl.offsetHeight : 0;
                 const tableHeight = mainTableEl.offsetHeight;
                 const footerNaturalHeight = footerBlock.offsetHeight;
-                const neededMargin = PAGE_CONTENT_HEIGHT_PX - tableHeight - footerNaturalHeight;
+                const neededMargin = PAGE_CONTENT_HEIGHT_PX - titleHeight - tableHeight - footerNaturalHeight;
                 // কনটেন্ট এক পেজে আঁটলেই কেবল ধাক্কা দেওয়া হবে; না আঁটলে স্বাভাবিক প্রবাহে চলে যাবে (পরের পেজে)
                 footerBlock.style.marginTop = neededMargin > 0 ? neededMargin + 'px' : '';
             }
@@ -1118,7 +1139,7 @@
             document.getElementById('single-adjust-current').innerText =
                 currentAdjust === 0 ? 'বর্তমান Adjust: নেই' : `বর্তমান Adjust: ${currentAdjust > 0 ? '+' : ''}${currentAdjust.toLocaleString('en-IN')}`;
 
-            document.getElementById('single-adj-mode').value = 'increase_pct';
+            document.getElementById('single-adj-mode').value = 'increase_flat';
             document.getElementById('single-adj-value').value = '';
 
             document.getElementById('single-adjust-modal').classList.add('open');
@@ -1189,7 +1210,8 @@
         const dbSalary = parseFloat(tr.getAttribute('data-default-salary')) || 0;
         const currentSalary = parseFloat(tr.querySelector('.salary-input').value) || 0;
         const adjustVal = parseFloat(tr.querySelector('.adjust-input').value) || 0;
-        const salaryDiff = (currentSalary + adjustVal) - dbSalary;
+        const salaryTypedDiff = currentSalary - dbSalary; // সরাসরি Salary ঘরে ম্যানুয়াল এডিট হলে
+        const salaryDiff = salaryTypedDiff + adjustVal; // মোট পরিবর্তন (Salary এডিট + Adjust) — শুধু "না থাকলে" চেক করার জন্য
 
         const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
         const absentDeduction = parseFloat(tr.dataset.deduction) || 0; // সবসময় Absent Days থেকে অটো-ক্যালকুলেটেড
@@ -1202,8 +1224,11 @@
         } else {
             msg = `Dear ${emp.name}, Your salary for ${monthYear} has been processed.\n\n`;
             msg += `- Basic Salary: ${dbSalary} BDT\n`;
-            if (salaryDiff > 0) msg += `- Salary Increment: +${salaryDiff} BDT\n`;
-            else if (salaryDiff < 0) msg += `- Salary Adjustment (Decrease): ${salaryDiff} BDT\n`;
+            if (salaryTypedDiff > 0) msg += `- Salary Increment: +${salaryTypedDiff} BDT\n`;
+            else if (salaryTypedDiff < 0) msg += `- Salary Adjustment (Decrease): ${salaryTypedDiff} BDT\n`;
+            // === Adjust কলামে যেকোনো পরিবর্তন (বাল্ক বা একজনের জন্য) সবসময় এখানে সাইনসহ দেখাবে ===
+            if (adjustVal > 0) msg += `- Adjustment: +${adjustVal} BDT\n`;
+            else if (adjustVal < 0) msg += `- Adjustment: ${adjustVal} BDT\n`;
             if (bonusAmount > 0) msg += `- Bonus: +${bonusAmount} BDT\n`;
             if (absentDays > 0) msg += `- Absence Deduction (${absentDays} Days): -${absentDeduction} BDT\n`;
             msg += `\nNet Payable Now: ${netPayable} BDT\n\nPlease visit the office to collect your payment.\n\n- Abdur Razzaq Dakhil Madrasah`;
