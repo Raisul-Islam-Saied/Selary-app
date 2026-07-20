@@ -140,6 +140,11 @@
             .signature-col { display: table-cell !important; }
         }
 
+        /* === Absent প্রিন্ট-ডিসপ্লে স্ক্রিনে দেখাবে না, ইনপুট বক্স দেখাবে === */
+        .absent-print-display {
+            display: none;
+        }
+
         /* === ডকুমেন্ট টাইটেল (এখন টেবিলের বাইরে, শুধু প্রথম পেজে দেখাবে) === */
         .print-title-row {
             margin-bottom: 14px;
@@ -183,7 +188,10 @@
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 2cm 1.5cm;
+                margin-top: 4.12cm; /* বেস 2cm + অতিরিক্ত 80px (≈2.12cm) — প্রতিটি পেজে সমানভাবে প্রযোজ্য */
+                margin-right: 1.5cm;
+                margin-bottom: 2cm;
+                margin-left: 1.5cm;
                 page-break-after:avoid; 
             }
             body {
@@ -227,6 +235,16 @@
                 display: none !important;
             }
 
+            /* === প্রিন্টে Absent সংখ্যার বদলে "X day/days" লেখা দেখাবে, খালি হলে সম্পূর্ণ ফাঁকা থাকবে === */
+            .absent-input {
+                display: none !important;
+            }
+            .absent-print-display {
+                display: inline-block !important;
+                width: 100%;
+                text-align: center;
+            }
+
             /* === Adjust কলাম প্রিন্টে হাইড থাকবে যদি কোনো মান না থাকে; মান থাকলে দেখাবে === */
             .adjust-col {
                 display: none !important;
@@ -239,10 +257,6 @@
             /* টেবিলের হেডার রো দ্বিতীয় পেজেও পুনরাবৃত্তি হবে */
             thead {
                 display: table-header-group;
-            }
-            /* পেজ ১-এর টাইটেলের উপরে অতিরিক্ত ৮০px জায়গা (আগের 2cm @page মার্জিনের সাথে যোগ হয়ে, শুধু প্রথম পেজে — টাইটেল আর পুনরাবৃত্তি হয় না) */
-            .print-title-row {
-                padding-top: 80px !important;
             }
             /* কোনো এমপ্লয়ির রো দুই পেজে ভেঙে যাবে না */
             tr {
@@ -382,7 +396,7 @@
                 <option value="decrease_flat">Decrease ৳ (Flat)</option>
                 <option value="increase_pct">Increase %</option>
                 <option value="decrease_pct">Decrease %</option>
-                <option value="set_fixed">Set Fixed ৳</option>
+                <option value="reset">Reset ↩</option>
             </select>
             <input type="number" id="adj-value" placeholder="Amount" min="0" style="width:110px;">
             <button id="adj-btn" onclick="applyBulkAdjust()">Apply to All</button>
@@ -442,7 +456,7 @@
                     <!-- Absent (Days) কলাম -->
                     <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
                     <th style="width: 11%; text-align: center;">
-                        Deduction
+                        Deduct
                         <select id="extra-type" style="display:none;">
                             <option value="deduction" selected>Deduction</option>
                             <option value="bonus">Bonus</option>
@@ -563,7 +577,7 @@
                 <option value="decrease_flat">Decrease ৳ (Flat)</option>
                 <option value="increase_pct">Increase %</option>
                 <option value="decrease_pct">Decrease %</option>
-                <option value="set_fixed">Set Fixed ৳</option>
+                <option value="reset">Reset ↩</option>
             </select>
 
             <label>পরিমাণ</label>
@@ -621,15 +635,12 @@
             }
         }
 
-        // Helper function: Get base salary for calculations (either typed or DB default) + Adjust কলামের মান
+        // Helper function: Get base salary for Deduction/Bonus calculations (Adjust কখনোই এই হিসাবে ঢুকবে না — সম্পূর্ণ আলাদা ডাটা)
         function getBaseSalaryForCalc(tr) {
             const enteredSalary = parseFloat(tr.querySelector('.salary-input').value) || 0;
             const defaultSalary = parseFloat(tr.getAttribute('data-default-salary')) || 0;
-            const adjustEl = tr.querySelector('.adjust-input');
-            const adjustVal = adjustEl ? (parseFloat(adjustEl.value) || 0) : 0;
             const isFixed = fixBaseToggle.checked;
-            const base = isFixed ? defaultSalary : enteredSalary;
-            return base + adjustVal;
+            return isFixed ? defaultSalary : enteredSalary;
         }
 
         // Absent কলাম প্রিন্টে হাইড হবে শুধু তখনই যখন Bonus মোড + Adjust কলাম দুটোই একসাথে সক্রিয় (ঘর বেড়ে যাওয়া এড়াতে)।
@@ -682,7 +693,10 @@
                     <td class="text-center">${emp.id}</td>
                     <td class="name-col">${emp.name}<span class="desig-sub">${emp.desig}</span></td>
                     <td class="input-cell"><input type="number" class="salary-input" data-field="salary" value="${emp.defaultSalary}" ${readonlyAttr}></td>
-                    <td class="input-cell absent-col"><input type="number" class="absent-input" placeholder="0"></td>
+                    <td class="input-cell absent-col">
+                        <input type="number" class="absent-input">
+                        <span class="absent-print-display"></span>
+                    </td>
                     <td class="input-cell">
                         <input type="number" class="extra-input" data-field="extra" readonly>
                     </td>
@@ -802,6 +816,12 @@
             const absentDays = parseFloat(tr.querySelector('.absent-input').value) || 0;
             const isBonus = extraTypeSelect.value === 'bonus';
             const daysInMonth = getDaysInMonth(monthInput.value, yearInput.innerText);
+
+            // প্রিন্টের জন্য Absent-এর ফরম্যাটেড লেখা ("1 day" / "3 days"), খালি থাকলে সম্পূর্ণ ফাঁকা
+            const absentDisplay = tr.querySelector('.absent-print-display');
+            if (absentDisplay) {
+                absentDisplay.innerText = absentDays > 0 ? `${absentDays} ${absentDays === 1 ? 'day' : 'days'}` : '';
+            }
 
             // === Deduction: Absent Days থেকে সবসময় অটো-ক্যালকুলেট ও প্রদর্শিত হবে (Bonus মোডেও) ===
             let deduction = 0;
@@ -968,8 +988,8 @@
             if (footerBlock && mainTableEl) {
                 footerBlock.style.marginTop = ''; // আগে রিসেট করে প্রকৃত উচ্চতা মাপা হচ্ছে
                 const CM_TO_PX = 37.7952755906;
-                // A4 উচ্চতা (29.7cm) বাদ @page-এর 2cm উপরে + 2cm নিচের মার্জিন = প্রতি পেজে ব্যবহারযোগ্য উচ্চতা
-                const PAGE_CONTENT_HEIGHT_PX = 25.7 * CM_TO_PX;
+                // A4 উচ্চতা (29.7cm) বাদ @page-এর 4.12cm উপরে + 2cm নিচের মার্জিন = প্রতি পেজে ব্যবহারযোগ্য উচ্চতা
+                const PAGE_CONTENT_HEIGHT_PX = 23.58 * CM_TO_PX;
                 const titleHeight = titleBlockEl ? titleBlockEl.offsetHeight : 0;
                 const tableHeight = mainTableEl.offsetHeight;
                 const footerNaturalHeight = footerBlock.offsetHeight;
@@ -1058,6 +1078,17 @@
          */
         function applyBulkAdjust() {
             const mode = document.getElementById('adj-mode').value;
+
+            if (mode === 'reset') {
+                document.querySelectorAll('.adjust-input').forEach(input => { input.value = ''; });
+                recalcAll();
+                const status = document.getElementById('adj-status');
+                status.textContent = '↩ Reset!';
+                status.style.opacity = '1';
+                setTimeout(() => { status.style.opacity = '0'; status.textContent = '✓ Applied!'; }, 2000);
+                return;
+            }
+
             const val = parseFloat(document.getElementById('adj-value').value);
 
             if (isNaN(val) || val < 0) {
@@ -1081,8 +1112,6 @@
                     newEffective = Math.round(effectiveSalary * (1 + val / 100));
                 } else if (mode === 'decrease_pct') {
                     newEffective = Math.max(0, Math.round(effectiveSalary * (1 - val / 100)));
-                } else if (mode === 'set_fixed') {
-                    newEffective = Math.round(val);
                 } else if (mode === 'increase_flat') {
                     newEffective = effectiveSalary + Math.round(val);
                 } else if (mode === 'decrease_flat') {
@@ -1156,6 +1185,15 @@
             if (!tr) return;
 
             const mode = document.getElementById('single-adj-mode').value;
+            const adjustInput = tr.querySelector('.adjust-input');
+
+            if (mode === 'reset') {
+                adjustInput.value = '';
+                recalcAll();
+                closeSingleAdjustModal();
+                return;
+            }
+
             const val = parseFloat(document.getElementById('single-adj-value').value);
 
             if (isNaN(val) || val < 0) {
@@ -1164,7 +1202,6 @@
             }
 
             const salaryInput = tr.querySelector('.salary-input');
-            const adjustInput = tr.querySelector('.adjust-input');
 
             const currentSalary = parseFloat(salaryInput.value) || 0;
             const currentAdjust = parseFloat(adjustInput.value) || 0;
@@ -1175,8 +1212,6 @@
                 newEffective = Math.round(effectiveSalary * (1 + val / 100));
             } else if (mode === 'decrease_pct') {
                 newEffective = Math.max(0, Math.round(effectiveSalary * (1 - val / 100)));
-            } else if (mode === 'set_fixed') {
-                newEffective = Math.round(val);
             } else if (mode === 'increase_flat') {
                 newEffective = effectiveSalary + Math.round(val);
             } else if (mode === 'decrease_flat') {
