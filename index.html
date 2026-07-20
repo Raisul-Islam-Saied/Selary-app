@@ -53,11 +53,11 @@
         /* নাম কলামের নিচে ছোট করে Designation দেখানোর স্টাইল */
         .desig-sub {
             display: block;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 400;
             color: #4b5563;
             white-space: normal;
-        
+            margin-top: 2px;
         }
         
         /* Inputs inside table */
@@ -109,6 +109,22 @@
         .bonus-input {
             color: #16a34a !important;
             font-weight: 700;
+        }
+
+        /* === Deduction হেডার লেবেল: জায়গা থাকলে পুরো "Deduction", Bonus/Adjust কলাম দেখালে ছোট করে "Deduct" === */
+        .deduct-label-short { display: none; }
+        .show-bonus .deduct-label-full,
+        .show-adjust .deduct-label-full {
+            display: none;
+        }
+        .show-bonus .deduct-label-short,
+        .show-adjust .deduct-label-short {
+            display: inline;
+        }
+
+        /* === Bonus/Adjust দুটোই বন্ধ থাকলে খালি হওয়া জায়গাটা Deduction কলাম পূর্ণভাবে নিয়ে নেবে === */
+        .expand-deduction .deduction-col {
+            width: 22%;
         }
 
         /* === সিঙ্গেল-এমপ্লয়ি Adjust মডাল === */
@@ -188,9 +204,9 @@
         @media print {
             @page {
                 size: A4 portrait;
-                margin-top: 4.22cm; /* বেস 2cm + অতিরিক্ত 80px (≈2.12cm) — প্রতিটি পেজে সমানভাবে প্রযোজ্য */
+                margin-top: 4.12cm; /* বেস 2cm + অতিরিক্ত 80px (≈2.12cm) — প্রতিটি পেজে সমানভাবে প্রযোজ্য */
                 margin-right: 1.5cm;
-                margin-bottom: 2.3cm;
+                margin-bottom: 2cm;
                 margin-left: 1.5cm;
                 page-break-after:avoid; 
             }
@@ -263,9 +279,9 @@
                 page-break-inside: avoid;
                 break-inside: avoid;
             }
-            /* প্রিন্ট করার সময় Designation সাব-লাইন ছোট থাকবে */
+            /* প্রিন্ট করার সময় Designation সাব-লাইন */
             .desig-sub {
-                font-size: 10px !important;
+                font-size: 12px !important;
             }
             /* গ্র্যান্ড টোটাল ও সিগনেচার ব্লক একসাথে থাকবে, মাঝপথে কখনো কাটবে না।
                পেজের নিচে বসানোর margin-top স্ক্রিপ্ট (beforeprint) দিয়ে ইনলাইনে বসানো হয়,
@@ -455,8 +471,8 @@
                     <th style="width: 12%; text-align: center;">Salary</th>
                     <!-- Absent (Days) কলাম -->
                     <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
-                    <th style="width: 11%; text-align: center;">
-                        Deduct
+                    <th class="deduction-col" style="width: 11%; text-align: center;">
+                        <span class="deduct-label-full">Deduction</span><span class="deduct-label-short">Deduct</span>
                         <select id="extra-type" style="display:none;">
                             <option value="deduction" selected>Deduction</option>
                             <option value="bonus">Bonus</option>
@@ -483,9 +499,18 @@
                     Grand Total: <span id="grand-total-text" class="ml-3 inline-block min-w-[100px] text-right"></span>/=
                 </div>
             </div>
+            <!-- টাকায় কথায় (Amount in Words) -->
+            <div class="flex justify-end pr-4">
+                <div class="text-xs text-gray-700 font-medium" id="grand-total-words"></div>
+            </div>
+
+            <!-- প্রস্তুতের তারিখ -->
+            <div class="mt-3 text-xs font-semibold text-gray-700">
+                Prepared Date: <span id="prepared-date"></span>
+            </div>
 
             <!-- Signatures -->
-            <div style="margin-top:60px;" class="flex justify-between text-center text-sm font-bold">
+            <div style="margin-top:80px;" class="flex justify-between text-center text-sm font-bold">
                 <div>
                     <div class="border-t border-black w-32 mx-auto mb-1"></div>
                     <p>Prepared By</p>
@@ -504,7 +529,7 @@
             </div>
         </div>
 
-        </div> <div id="ai-sms-modal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        </div> <div id="ai-sms-modal" class="no-print fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
             
             <div class="bg-gradient-to-r from-violet-600 to-indigo-600 p-5 flex justify-between items-center text-white">
@@ -697,7 +722,7 @@
                         <input type="number" class="absent-input">
                         <span class="absent-print-display"></span>
                     </td>
-                    <td class="input-cell">
+                    <td class="input-cell deduction-col">
                         <input type="number" class="extra-input" data-field="extra" readonly>
                     </td>
                     <td class="input-cell bonus-col">
@@ -776,6 +801,9 @@
             const isBonus = extraTypeSelect.value === 'bonus';
             mainTable.classList.toggle('show-bonus', isBonus);
             updateBonusToggleButton(isBonus);
+            // Bonus ও Adjust দুটোই বন্ধ থাকলে খালি জায়গাটা Deduction কলাম পূর্ণভাবে নেবে
+            const hasAdjust = mainTable.classList.contains('show-adjust');
+            mainTable.classList.toggle('expand-deduction', !isBonus && !hasAdjust);
         }
 
         function updateBonusToggleButton(isBonus) {
@@ -856,6 +884,37 @@
             updateAdjustDisplay(tr);
         }
 
+        // === টাকার অংক থেকে বাংলায় কথায় রূপান্তর ===
+        const BN_WORDS = ["শূন্য","এক","দুই","তিন","চার","পাঁচ","ছয়","সাত","আট","নয়","দশ",
+            "এগারো","বারো","তেরো","চৌদ্দ","পনেরো","ষোলো","সতেরো","আঠারো","উনিশ","বিশ",
+            "একুশ","বাইশ","তেইশ","চব্বিশ","পঁচিশ","ছাব্বিশ","সাতাশ","আঠাশ","ঊনত্রিশ","ত্রিশ",
+            "একত্রিশ","বত্রিশ","তেত্রিশ","চৌত্রিশ","পঁয়ত্রিশ","ছত্রিশ","সাঁইত্রিশ","আটত্রিশ","ঊনচল্লিশ","চল্লিশ",
+            "একচল্লিশ","বিয়াল্লিশ","তেতাল্লিশ","চুয়াল্লিশ","পঁয়তাল্লিশ","ছেচল্লিশ","সাতচল্লিশ","আটচল্লিশ","ঊনপঞ্চাশ","পঞ্চাশ",
+            "একান্ন","বাহান্ন","তিপ্পান্ন","চুয়ান্ন","পঞ্চান্ন","ছাপ্পান্ন","সাতান্ন","আটান্ন","ঊনষাট","ষাট",
+            "একষট্টি","বাষট্টি","তেষট্টি","চৌষট্টি","পঁয়ষট্টি","ছেষট্টি","সাতষট্টি","আটষট্টি","ঊনসত্তর","সত্তর",
+            "একাত্তর","বাহাত্তর","তিয়াত্তর","চুয়াত্তর","পঁচাত্তর","ছিয়াত্তর","সাতাত্তর","আটাত্তর","ঊনআশি","আশি",
+            "একাশি","বিরাশি","তিরাশি","চুরাশি","পঁচাশি","ছিয়াশি","সাতাশি","আটাশি","ঊননব্বই","নব্বই",
+            "একানব্বই","বিরানব্বই","তিরানব্বই","চুরানব্বই","পঁচানব্বই","ছিয়ানব্বই","সাতানব্বই","আটানব্বই","নিরানব্বই"];
+
+        function numberToBengaliWords(num) {
+            num = Math.round(num);
+            if (!num || num <= 0) return '';
+            let n = num;
+            const crore = Math.floor(n / 10000000); n %= 10000000;
+            const lakh = Math.floor(n / 100000); n %= 100000;
+            const thousand = Math.floor(n / 1000); n %= 1000;
+            const hundred = Math.floor(n / 100); n %= 100;
+
+            let words = '';
+            if (crore) words += BN_WORDS[crore] + ' কোটি ';
+            if (lakh) words += BN_WORDS[lakh] + ' লক্ষ ';
+            if (thousand) words += BN_WORDS[thousand] + ' হাজার ';
+            if (hundred) words += BN_WORDS[hundred] + ' শত ';
+            if (n) words += BN_WORDS[n] + ' ';
+
+            return words.trim() + ' টাকা মাত্র';
+        }
+
         function calculateGrandTotal() {
             let grandTotal = 0;
             document.querySelectorAll('.total-col').forEach(col => {
@@ -864,10 +923,13 @@
             });
             
             const grandTotalEl = document.getElementById('grand-total-text');
+            const wordsEl = document.getElementById('grand-total-words');
             if (grandTotal > 0) {
                 grandTotalEl.innerText = grandTotal.toLocaleString('en-IN');
+                if (wordsEl) wordsEl.innerText = '(' + numberToBengaliWords(grandTotal) + ')';
             } else {
                 grandTotalEl.innerText = '';
+                if (wordsEl) wordsEl.innerText = '';
             }
         }
 
@@ -1036,6 +1098,11 @@
 
             const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
             monthInput.value = currentMonthName;
+
+            const preparedDateEl = document.getElementById('prepared-date');
+            if (preparedDateEl) {
+                preparedDateEl.innerText = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+            }
             
             renderTable();
             loadData();
