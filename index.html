@@ -142,7 +142,7 @@
 
         /* === Signatures ব্লক (Prepared By/Date of Payment/Superintendent) শুধু প্রিন্টে দেখাবে, স্ক্রিন UI-তে হাইড থাকবে === */
         @media screen {
-            .signature-block { display: none; }
+            .signature-block { display: none !important; }
         }
         @media print {
             .signature-block { display: flex !important; }
@@ -1042,7 +1042,7 @@
                 const titleHeight = titleBlockEl ? titleBlockEl.offsetHeight : 0;
                 const tableHeight = mainTableEl.offsetHeight;
                 const footerNaturalHeight = footerBlock.offsetHeight;
-                const neededMargin = PAGE_CONTENT_HEIGHT_PX - titleHeight - tableHeight - footerNaturalHeight + 150; // +150px অতিরিক্ত নিচে নামানোর জন্য
+                const neededMargin = PAGE_CONTENT_HEIGHT_PX - titleHeight - tableHeight - footerNaturalHeight + 300; // +300px অতিরিক্ত নিচে নামানোর জন্য
                 // কনটেন্ট এক পেজে আঁটলেই কেবল ধাক্কা দেওয়া হবে; না আঁটলে স্বাভাবিক প্রবাহে চলে যাবে (পরের পেজে)
                 footerBlock.style.marginTop = neededMargin > 0 ? neededMargin + 'px' : '';
             }
