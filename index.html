@@ -1034,7 +1034,7 @@
                 const titleHeight = titleBlockEl ? titleBlockEl.offsetHeight : 0;
                 const tableHeight = mainTableEl.offsetHeight;
                 const footerNaturalHeight = footerBlock.offsetHeight;
-                const neededMargin = PAGE_CONTENT_HEIGHT_PX - titleHeight - tableHeight - footerNaturalHeight;
+                const neededMargin = PAGE_CONTENT_HEIGHT_PX - titleHeight - tableHeight - footerNaturalHeight + 50; // +50px অতিরিক্ত নিচে নামানোর জন্য
                 // কনটেন্ট এক পেজে আঁটলেই কেবল ধাক্কা দেওয়া হবে; না আঁটলে স্বাভাবিক প্রবাহে চলে যাবে (পরের পেজে)
                 footerBlock.style.marginTop = neededMargin > 0 ? neededMargin + 'px' : '';
             }
