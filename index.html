@@ -368,12 +368,6 @@
             <span id="save-status" class="text-sm text-green-600 font-medium opacity-0 transition-opacity duration-300">✓ Auto-saved</span>
         </div>
         <div class="flex items-center gap-5">
-            <!-- === নতুন: Fix Base চেকবক্স (সবসময় দৃশ্যমান থাকবে) === -->
-            <label class="flex items-center gap-2 cursor-pointer select-none text-gray-700 font-medium">
-                <input type="checkbox" id="fix-base-toggle" class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
-                <span class="text-green-700">Fix Base</span>
-            </label>
-
             <label class="flex items-center gap-2 cursor-pointer select-none text-gray-700 font-medium">
                 <input type="checkbox" id="edit-toggle" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                 <span>Unlock Edit</span>
@@ -456,7 +450,7 @@
                     <!-- Absent (Days) কলাম -->
                     <th class="absent-col" style="width: 8%; text-align: center;">Absent</th>
                     <th style="width: 11%; text-align: center;">
-                        Deduct
+                        <span id="deduct-header-label">Deduct</span>
                         <select id="extra-type" style="display:none;">
                             <option value="deduction" selected>Deduction</option>
                             <option value="bonus">Bonus</option>
@@ -481,6 +475,14 @@
             <div class="flex justify-end mt-4 pr-4">
                 <div class="text-lg font-bold text-black pb-1">
                     Grand Total: <span id="grand-total-text" class="ml-3 inline-block min-w-[100px] text-right"></span>/=
+                </div>
+            </div>
+            <div class="flex justify-end pr-4">
+                <div class="text-xs font-semibold text-gray-700" id="grand-total-words"></div>
+            </div>
+            <div class="flex justify-end mt-2 pr-4">
+                <div class="text-xs font-semibold text-gray-700">
+                    Prepared on: <span class="inline-input" id="prepare-datetime" contenteditable="true" data-key="prepareDatetime"></span>
                 </div>
             </div>
 
@@ -624,8 +626,10 @@
         const extraTypeSelect = document.getElementById('extra-type');
         const mainTable = document.getElementById('main-table');
         const editToggle = document.getElementById('edit-toggle');
-        const fixBaseToggle = document.getElementById('fix-base-toggle');
         const bonusToggleBtn = document.getElementById('bonus-toggle-btn');
+        const deductHeaderLabel = document.getElementById('deduct-header-label');
+        const prepareDatetimeEl = document.getElementById('prepare-datetime');
+        const PREPARE_DT_KEY = 'madrasa_prepare_datetime';
         let saveTimeout;
 
         function updateTitle() {
@@ -638,9 +642,7 @@
         // Helper function: Get base salary for Deduction/Bonus calculations (Adjust কখনোই এই হিসাবে ঢুকবে না — সম্পূর্ণ আলাদা ডাটা)
         function getBaseSalaryForCalc(tr) {
             const enteredSalary = parseFloat(tr.querySelector('.salary-input').value) || 0;
-            const defaultSalary = parseFloat(tr.getAttribute('data-default-salary')) || 0;
-            const isFixed = fixBaseToggle.checked;
-            return isFixed ? defaultSalary : enteredSalary;
+            return enteredSalary;
         }
 
         // Absent কলাম প্রিন্টে হাইড হবে শুধু তখনই যখন Bonus মোড + Adjust কলাম দুটোই একসাথে সক্রিয় (ঘর বেড়ে যাওয়া এড়াতে)।
@@ -764,11 +766,6 @@
 
             monthInput.addEventListener('change', recalcAll);
             yearInput.addEventListener('input', recalcAll);
-
-            fixBaseToggle.addEventListener('change', (e) => {
-                localStorage.setItem('madrasa_fix_base_mode', e.target.checked);
-                recalcAll(); 
-            });
         }
 
         // Bonus কলাম শুধু Bonus মোড অন থাকলে দেখাবে (স্ক্রিন ও প্রিন্ট উভয়ে)
@@ -776,6 +773,7 @@
             const isBonus = extraTypeSelect.value === 'bonus';
             mainTable.classList.toggle('show-bonus', isBonus);
             updateBonusToggleButton(isBonus);
+            updateDeductHeaderLabel();
         }
 
         function updateBonusToggleButton(isBonus) {
@@ -787,6 +785,14 @@
                 bonusToggleBtn.textContent = '🎁 Bonus: OFF';
                 bonusToggleBtn.className = 'px-4 py-2 rounded font-bold text-sm border-2 transition bg-white text-gray-500 border-gray-300 hover:border-emerald-400';
             }
+        }
+
+        // Bonus এবং Adjust দুটোই নিষ্ক্রিয় থাকলে হেডারে "Deduction" দেখাবে, নাহলে "Deduct" দেখাবে
+        function updateDeductHeaderLabel() {
+            if (!deductHeaderLabel) return;
+            const isBonus = extraTypeSelect.value === 'bonus';
+            const hasAdjust = mainTable.classList.contains('show-adjust');
+            deductHeaderLabel.innerText = (!isBonus && !hasAdjust) ? 'Deduction' : 'Deduct';
         }
 
         // টগল বাটনে ক্লিক করলে Bonus মোড অন/অফ হবে (ড্রপডাউনের বদলে)
@@ -856,6 +862,33 @@
             updateAdjustDisplay(tr);
         }
 
+        // পূর্ণ সংখ্যাকে ইংরেজি শব্দে রূপান্তর করার হেল্পার ফাংশন (Crore/Lakh/Thousand পদ্ধতিতে)
+        function numberToWordsEnglish(num) {
+            num = Math.round(num);
+            if (num === 0) return 'Zero';
+            const belowTwenty = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+            const tensWords = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+            function twoDigits(n) {
+                if (n < 20) return belowTwenty[n];
+                return tensWords[Math.floor(n / 10)] + (n % 10 ? ' ' + belowTwenty[n % 10] : '');
+            }
+            function threeDigits(n) {
+                if (n < 100) return twoDigits(n);
+                return belowTwenty[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + twoDigits(n % 100) : '');
+            }
+            let n = num;
+            let word = '';
+            const crore = Math.floor(n / 10000000); n %= 10000000;
+            const lakh = Math.floor(n / 100000); n %= 100000;
+            const thousand = Math.floor(n / 1000); n %= 1000;
+            const hundred = n;
+            if (crore) word += threeDigits(crore) + ' Crore ';
+            if (lakh) word += threeDigits(lakh) + ' Lakh ';
+            if (thousand) word += threeDigits(thousand) + ' Thousand ';
+            if (hundred) word += threeDigits(hundred);
+            return word.trim();
+        }
+
         function calculateGrandTotal() {
             let grandTotal = 0;
             document.querySelectorAll('.total-col').forEach(col => {
@@ -864,10 +897,13 @@
             });
             
             const grandTotalEl = document.getElementById('grand-total-text');
+            const grandTotalWordsEl = document.getElementById('grand-total-words');
             if (grandTotal > 0) {
                 grandTotalEl.innerText = grandTotal.toLocaleString('en-IN');
+                if (grandTotalWordsEl) grandTotalWordsEl.innerText = 'In Words: ' + numberToWordsEnglish(grandTotal) + ' Taka Only';
             } else {
                 grandTotalEl.innerText = '';
+                if (grandTotalWordsEl) grandTotalWordsEl.innerText = '';
             }
         }
 
@@ -1030,16 +1066,31 @@
                 });
             });
 
-            // Fix Base Toggle Logic (সবসময় প্রযোজ্য)
-            let isFixBase = localStorage.getItem('madrasa_fix_base_mode') === 'true';
-            fixBaseToggle.checked = isFixBase;
-
             const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
             monthInput.value = currentMonthName;
             
             renderTable();
             loadData();
             updateTitle(); 
+
+            // Prepare Date/Time ফিল্ড ইনিশিয়ালাইজ করা হলো (আগে থেকে সেভ থাকলে সেটাই, নাহলে বর্তমান তারিখ-সময়)
+            if (prepareDatetimeEl) {
+                const savedPrepareDt = localStorage.getItem(PREPARE_DT_KEY);
+                if (savedPrepareDt) {
+                    prepareDatetimeEl.innerText = savedPrepareDt;
+                } else {
+                    const now = new Date();
+                    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    let hrs = now.getHours();
+                    const mins = now.getMinutes().toString().padStart(2, '0');
+                    const ampm = hrs >= 12 ? 'PM' : 'AM';
+                    hrs = hrs % 12; if (hrs === 0) hrs = 12;
+                    prepareDatetimeEl.innerText = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}, ${hrs}:${mins} ${ampm}`;
+                }
+                prepareDatetimeEl.addEventListener('input', () => {
+                    localStorage.setItem(PREPARE_DT_KEY, prepareDatetimeEl.innerText);
+                });
+            }
         });
 
         document.addEventListener("focusin", function (e) {
@@ -1073,7 +1124,7 @@
          * applyBulkAdjust()
          * - মূল employees[] array, data-default-salary attribute, বা Salary কলাম কখনোই পরিবর্তন করে না।
          * - শুধুমাত্র আলাদা Adjust কলামে ডেল্টা (পরিবর্তনের পরিমাণ) বসায়।
-         * - Fix Base চালু থাকলেও কর্তন/বোনাস মূল DB বেতন + Adjust থেকে হিসাব হয়।
+         * - কর্তন/বোনাস মূল Salary কলাম + Adjust থেকে হিসাব হয়।
          * - Apply করার পর recalcAll() ডাকা হয় যাতে Total কলাম আপডেট হয়।
          */
         function applyBulkAdjust() {
