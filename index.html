@@ -188,7 +188,7 @@
         @media print {
             @page {
                 size: A4 portrait;
-                margin-top: 4.72cm; /* বেস 2cm + অতিরিক্ত মার্জিন — আরও বাড়ানো হয়েছে */
+                margin-top: 4.72cm; /* সব পেজে সমান মার্জিন */
                 margin-right: 1.5cm;
                 margin-bottom: 2.3cm;
                 margin-left: 1.5cm;
@@ -270,7 +270,7 @@
             /* Bonus মোড না থাকলে (অর্থাৎ Deduction অবস্থায়), Bonus কলাম হাইড থাকায় নামের ঘর অতিরিক্ত বড় দেখায় — তাই তখন সংকুচিত করা হলো */
             #main-table:not(.show-bonus) th:nth-child(2),
             #main-table:not(.show-bonus) td.name-col {
-                width: 22% !important;
+                width: 24% !important;
             }
             /* গ্র্যান্ড টোটাল ও সিগনেচার ব্লক একসাথে থাকবে, মাঝপথে কখনো কাটবে না।
                পেজের নিচে বসানোর margin-top স্ক্রিপ্ট (beforeprint) দিয়ে ইনলাইনে বসানো হয়,
