@@ -140,6 +140,14 @@
             .signature-col { display: table-cell !important; }
         }
 
+        /* === Signatures ব্লক (Prepared By/Date of Payment/Superintendent) শুধু প্রিন্টে দেখাবে, স্ক্রিন UI-তে হাইড থাকবে === */
+        @media screen {
+            .signature-block { display: none; }
+        }
+        @media print {
+            .signature-block { display: flex !important; }
+        }
+
         /* === Absent প্রিন্ট-ডিসপ্লে স্ক্রিনে দেখাবে না, ইনপুট বক্স দেখাবে === */
         .absent-print-display {
             display: none;
@@ -492,7 +500,7 @@
             </div>
 
             <!-- Signatures -->
-            <div style="margin-top:220px;" class="flex justify-between text-center text-sm font-bold">
+            <div style="margin-top:60px;" class="signature-block flex justify-between text-center text-sm font-bold">
                 <div>
                     <div class="border-t border-black w-32 mx-auto mb-1"></div>
                     <p>Prepared By</p>
