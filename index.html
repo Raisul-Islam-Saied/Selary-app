@@ -1030,23 +1030,7 @@
                 });
             }
 
-            // === সিগনেচার ব্লককে পেজের একদম নিচে বসানোর হিসাব ===
-            const footerBlock = document.getElementById('footer-block');
-            const mainTableEl = document.getElementById('main-table');
-            const titleBlockEl = document.querySelector('.print-title-row');
-            if (footerBlock && mainTableEl) {
-                footerBlock.style.marginTop = ''; // আগে রিসেট করে প্রকৃত উচ্চতা মাপা হচ্ছে
-                const CM_TO_PX = 37.7952755906;
-                // A4 উচ্চতা (29.7cm) বাদ @page-এর 4.72cm উপরে + 2.3cm নিচের মার্জিন = প্রতি পেজে ব্যবহারযোগ্য উচ্চতা
-                const PAGE_CONTENT_HEIGHT_PX = 23.08 * CM_TO_PX;
-                const titleHeight = titleBlockEl ? titleBlockEl.offsetHeight : 0;
-                const tableHeight = mainTableEl.offsetHeight;
-                const footerNaturalHeight = footerBlock.offsetHeight;
-                const neededMargin = PAGE_CONTENT_HEIGHT_PX - titleHeight - tableHeight - footerNaturalHeight + 300; // +300px অতিরিক্ত নিচে নামানোর জন্য
-                // কনটেন্ট এক পেজে আঁটলেই কেবল ধাক্কা দেওয়া হবে; না আঁটলে স্বাভাবিক প্রবাহে চলে যাবে (পরের পেজে)
-                footerBlock.style.marginTop = neededMargin > 0 ? neededMargin + 'px' : '';
-            }
-        });
+            
 
         // === প্রিন্ট হওয়ার পর আবার মূল বেতনে ও স্বাভাবিক মার্জিনে ফিরিয়ে আনার লজিক ===
         window.addEventListener('afterprint', () => {
@@ -1059,9 +1043,7 @@
                     }
                 });
             }
-            const footerBlock = document.getElementById('footer-block');
-            if (footerBlock) footerBlock.style.marginTop = '';
-        });
+                    });
 
         document.addEventListener('DOMContentLoaded', () => {
             // Edit Toggle Logic
