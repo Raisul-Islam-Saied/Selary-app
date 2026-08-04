@@ -276,10 +276,10 @@
                 font-size: 11px !important;
             }
             /* Bonus মোড না থাকলে (অর্থাৎ Deduction অবস্থায়), Bonus কলাম হাইড থাকায় নামের ঘর অতিরিক্ত বড় দেখায় — তাই তখন সংকুচিত করা হলো */
-            #main-table:not(.show-bonus) th:nth-child(2),
-            #main-table:not(.show-bonus) td.name-col {
-                width: 24% !important;
-            }
+            #main-table:not(.show-bonus):not(.show-adjust) th:nth-child(2),
+#main-table:not(.show-bonus):not(.show-adjust) td.name-col {
+    width: 24% !important;
+}
             /* গ্র্যান্ড টোটাল ও সিগনেচার ব্লক একসাথে থাকবে, মাঝপথে কখনো কাটবে না।
                এখন একটা নিশ্চিত (fixed) মার্জিন দেওয়া হলো, যাতে জায়গা থাকলে সবসময় নিচে নামে */
             #footer-block {
