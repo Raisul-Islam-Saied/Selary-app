@@ -482,21 +482,44 @@
             </tbody>
         </table>
 
-        <!-- Grand Total + Signature (একসাথে, পেজ ব্রেক হলে সম্পূর্ণ ব্লকটাই পরের পেজে যাবে) -->
+                <!-- Grand Total + Signature (একসাথে, পেজ ব্রেক হলে সম্পূর্ণ ব্লকটাই পরের পেজে যাবে) -->
         <div id="footer-block">
-            <!-- Grand Total -->
+            <!-- Total Basic -->
             <div class="flex justify-end mt-4 pr-4">
                 <div class="text-base font-semibold text-gray-700 pb-1">
                     Total Basic : <span id="total-basic-text" class="inline-block min-w-[100px] text-right"></span>/=
                 </div>
             </div>
 
-            <!-- Total Deduction (নতুন যুক্ত করা হয়েছে) -->
+            <!-- Total Bonus (যদি থাকে তবেই দেখাবে) -->
+            <div id="total-bonus-row" class="flex justify-end pr-4 hidden">
+                <div class="text-base font-semibold text-emerald-600 pb-1">
+                    Total Bonus : <span id="total-bonus-text" class="inline-block min-w-[100px] text-right"></span>/=
+                </div>
+            </div>
+
+            <!-- Total Adjust (+) (যদি থাকে তবেই দেখাবে) -->
+            <div id="total-adjust-plus-row" class="flex justify-end pr-4 hidden">
+                <div class="text-base font-semibold text-blue-600 pb-1">
+                    Total Adjust (+) : <span id="total-adjust-plus-text" class="inline-block min-w-[100px] text-right"></span>/=
+                </div>
+            </div>
+
+            <!-- Total Adjust (-) (যদি থাকে তবেই দেখাবে) -->
+            <div id="total-adjust-minus-row" class="flex justify-end pr-4 hidden">
+                <div class="text-base font-semibold text-orange-600 pb-1">
+                    Total Adjust (-) : <span id="total-adjust-minus-text" class="inline-block min-w-[100px] text-right"></span>/=
+                </div>
+            </div>
+
+            <!-- Total Deduction -->
             <div class="flex justify-end pr-4">
                 <div class="text-base font-semibold text-red-600 pb-1 border-b border-gray-400">
                     Total Deduction : <span id="total-deduction-text" class="inline-block min-w-[100px] text-right"></span>/=
                 </div>
             </div>
+            
+            <!-- Net Payable Amount -->
             <div class="flex justify-end mt-4 pr-4">
                 <div class="text-lg font-bold text-black pb-1">
                     Net Payable Amount : <span id="grand-total-text" class=" inline-block min-w-[100px] text-right"></span>/=
@@ -530,6 +553,7 @@
                 </div>
             </div>
         </div>
+
 
         </div> <div id="ai-sms-modal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
@@ -915,35 +939,83 @@
             return word.trim();
         }
 
-       function calculateGrandTotal() {
+               function calculateGrandTotal() {
             let grandTotal = 0;
             let totalBasic = 0;
             let totalDeduction = 0;
+            let totalBonus = 0;
+            let totalAdjustPlus = 0;
+            let totalAdjustMinus = 0;
 
             document.querySelectorAll('.total-col').forEach(col => {
                 const val = parseFloat(col.innerText.replace(/,/g, '')) || 0;
                 grandTotal += val;
             });
 
-            // সবার বেসিক এবং কর্তনের হিসাব যোগ করা হচ্ছে
+            // সবার বেসিক, কর্তন, বোনাস এবং অ্যাডজাস্টমেন্ট যোগ করা হচ্ছে
             document.querySelectorAll('tr[data-id]').forEach(tr => {
                 const basicVal = parseFloat(tr.querySelector('.salary-input').value) || 0;
                 totalBasic += basicVal;
 
                 const deductVal = parseFloat(tr.querySelector('.extra-input').value) || 0;
                 totalDeduction += deductVal;
+
+                const bonusVal = parseFloat(tr.querySelector('.bonus-input').value) || 0;
+                if (extraTypeSelect.value === 'bonus') {
+                    totalBonus += bonusVal;
+                }
+
+                // অ্যাডজাস্টমেন্ট আলাদা করা (প্লাস এবং মাইনাস)
+                const adjustVal = parseFloat(tr.querySelector('.adjust-input').value) || 0;
+                if (adjustVal > 0) {
+                    totalAdjustPlus += adjustVal;
+                } else if (adjustVal < 0) {
+                    totalAdjustMinus += adjustVal; // এটি মাইনাস ফিগারেই সেভ হবে
+                }
             });
             
             const grandTotalEl = document.getElementById('grand-total-text');
             const grandTotalWordsEl = document.getElementById('grand-total-words');
             
-            // নতুন ফিল্ডগুলোর ডাটা আপডেট
             const totalBasicEl = document.getElementById('total-basic-text');
             const totalDeductionEl = document.getElementById('total-deduction-text');
+            const totalBonusEl = document.getElementById('total-bonus-text');
+            const totalAdjustPlusEl = document.getElementById('total-adjust-plus-text');
+            const totalAdjustMinusEl = document.getElementById('total-adjust-minus-text');
 
-            if (totalBasicEl) totalBasicEl.innerText = totalBasic > 0 ? totalBasic.toLocaleString('en-IN') : '';
-            if (totalDeductionEl) totalDeductionEl.innerText = totalDeduction > 0 ? totalDeduction.toLocaleString('en-IN') : '';
+            const totalBonusRow = document.getElementById('total-bonus-row');
+            const totalAdjustPlusRow = document.getElementById('total-adjust-plus-row');
+            const totalAdjustMinusRow = document.getElementById('total-adjust-minus-row');
 
+            // বেসিক এবং কর্তন বসানো
+            if (totalBasicEl) totalBasicEl.innerText = totalBasic > 0 ? totalBasic.toLocaleString('en-IN') : '0';
+            if (totalDeductionEl) totalDeductionEl.innerText = totalDeduction > 0 ? totalDeduction.toLocaleString('en-IN') : '0';
+
+            // বোনাস
+            if (totalBonus > 0) {
+                totalBonusEl.innerText = '+' + totalBonus.toLocaleString('en-IN');
+                totalBonusRow.classList.remove('hidden');
+            } else {
+                totalBonusRow.classList.add('hidden');
+            }
+
+            // Adjust Plus (+)
+            if (totalAdjustPlus > 0) {
+                totalAdjustPlusEl.innerText = '+' + totalAdjustPlus.toLocaleString('en-IN');
+                totalAdjustPlusRow.classList.remove('hidden');
+            } else {
+                totalAdjustPlusRow.classList.add('hidden');
+            }
+
+            // Adjust Minus (-)
+            if (totalAdjustMinus < 0) {
+                totalAdjustMinusEl.innerText = totalAdjustMinus.toLocaleString('en-IN'); // মাইনাস চিহ্ন অটোমেটিক থাকবে
+                totalAdjustMinusRow.classList.remove('hidden');
+            } else {
+                totalAdjustMinusRow.classList.add('hidden');
+            }
+
+            // Net Payable বসানো
             if (grandTotal > 0) {
                 grandTotalEl.innerText = grandTotal.toLocaleString('en-IN');
                 if (grandTotalWordsEl) grandTotalWordsEl.innerText = 'In Words: ' + numberToWordsEnglish(grandTotal) + ' Taka Only';
