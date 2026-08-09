@@ -486,6 +486,18 @@
         <div id="footer-block">
             <!-- Grand Total -->
             <div class="flex justify-end mt-4 pr-4">
+                <div class="text-base font-semibold text-gray-700 pb-1">
+                    Total Basic : <span id="total-basic-text" class="inline-block min-w-[100px] text-right"></span>/=
+                </div>
+            </div>
+
+            <!-- Total Deduction (নতুন যুক্ত করা হয়েছে) -->
+            <div class="flex justify-end pr-4">
+                <div class="text-base font-semibold text-red-600 pb-1 border-b border-gray-400">
+                    Total Deduction : <span id="total-deduction-text" class="inline-block min-w-[100px] text-right"></span>/=
+                </div>
+            </div>
+            <div class="flex justify-end mt-4 pr-4">
                 <div class="text-lg font-bold text-black pb-1">
                     Grand Total: <span id="grand-total-text" class=" inline-block min-w-[100px] text-right"></span>/=
                 </div>
@@ -903,15 +915,35 @@
             return word.trim();
         }
 
-        function calculateGrandTotal() {
+       function calculateGrandTotal() {
             let grandTotal = 0;
+            let totalBasic = 0;
+            let totalDeduction = 0;
+
             document.querySelectorAll('.total-col').forEach(col => {
                 const val = parseFloat(col.innerText.replace(/,/g, '')) || 0;
                 grandTotal += val;
             });
+
+            // সবার বেসিক এবং কর্তনের হিসাব যোগ করা হচ্ছে
+            document.querySelectorAll('tr[data-id]').forEach(tr => {
+                const basicVal = parseFloat(tr.querySelector('.salary-input').value) || 0;
+                totalBasic += basicVal;
+
+                const deductVal = parseFloat(tr.querySelector('.extra-input').value) || 0;
+                totalDeduction += deductVal;
+            });
             
             const grandTotalEl = document.getElementById('grand-total-text');
             const grandTotalWordsEl = document.getElementById('grand-total-words');
+            
+            // নতুন ফিল্ডগুলোর ডাটা আপডেট
+            const totalBasicEl = document.getElementById('total-basic-text');
+            const totalDeductionEl = document.getElementById('total-deduction-text');
+
+            if (totalBasicEl) totalBasicEl.innerText = totalBasic > 0 ? totalBasic.toLocaleString('en-IN') : '';
+            if (totalDeductionEl) totalDeductionEl.innerText = totalDeduction > 0 ? totalDeduction.toLocaleString('en-IN') : '';
+
             if (grandTotal > 0) {
                 grandTotalEl.innerText = grandTotal.toLocaleString('en-IN');
                 if (grandTotalWordsEl) grandTotalWordsEl.innerText = 'In Words: ' + numberToWordsEnglish(grandTotal) + ' Taka Only';
