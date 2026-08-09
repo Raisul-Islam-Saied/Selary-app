@@ -1120,37 +1120,7 @@
             setTimeout(() => { status.style.opacity = '0'; }, 2000);
         }
 
-        // === প্রিন্ট করার ঠিক আগে বেতনের মান পরিবর্তন করার লজিক ===
-        window.addEventListener('beforeprint', () => {
-            if (extraTypeSelect.value === 'bonus') {
-                document.querySelectorAll('tr[data-id]').forEach(tr => {
-                    const salaryInput = tr.querySelector('.salary-input');
-                    const baseSalary = parseFloat(tr.dataset.baseSalary) || 0;
-                    const deduction = parseFloat(tr.dataset.deduction) || 0;
-                    
-                    // বেতনের কলামে কর্তন-পরবর্তী বেতন বসিয়ে দেওয়া হলো
-                    if (baseSalary > 0 && deduction > 0) {
-                        salaryInput.value = baseSalary - deduction;
-                    }
-                });
-            }
-
-            // === সিগনেচার ব্লককে পেজের একদম নিচে বসানোর হিসাব ===
-            
-        });
-
-        // === প্রিন্ট হওয়ার পর আবার মূল বেতনে ও স্বাভাবিক মার্জিনে ফিরিয়ে আনার লজিক ===
-        window.addEventListener('afterprint', () => {
-            if (extraTypeSelect.value === 'bonus') {
-                document.querySelectorAll('tr[data-id]').forEach(tr => {
-                    const salaryInput = tr.querySelector('.salary-input');
-                    const rawBaseSalary = tr.dataset.baseSalary;
-                    if (rawBaseSalary !== undefined) {
-                        salaryInput.value = rawBaseSalary;
-                    }
-                });
-            }
-          });
+        
 
         document.addEventListener('DOMContentLoaded', () => {
             // Edit Toggle Logic
